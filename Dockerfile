@@ -14,6 +14,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
 RUN useradd --create-home appuser \
     && mkdir -p /app/static/uploads \
     && chown -R appuser:appuser /app
@@ -25,4 +28,4 @@ ENV PYTHONUNBUFFERED=1 \
 
 EXPOSE 8000
 
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "60"]
+CMD ["/app/start.sh"]
