@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}Админка — KAVKAZ-CAR{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <header class="topnav glass">
+    <div class="container topnav__row">
+      <span class="logo"><span class="logo__mark"></span>KAVKAZ-CAR <span class="text-muted" style="font-weight:400;font-size:13px;">/ admin</span></span>
+      <form method="post" action="{{ url_for('auth.admin_logout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-ghost btn-sm">Выйти</button>
+      </form>
+    </div>
+  </header>
+
+  <div class="container" style="padding-top:24px;">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="admin-shell">
+      <nav class="admin-sidebar">
+        <a href="{{ url_for('admin_panel.dashboard') }}" class="{{ 'is-active' if request.endpoint == 'admin_panel.dashboard' }}">Обзор</a>
+        <a href="{{ url_for('admin_panel.users') }}" class="{{ 'is-active' if request.endpoint == 'admin_panel.users' }}">Пользователи</a>
+        <a href="{{ url_for('admin_panel.cars') }}" class="{{ 'is-active' if request.endpoint == 'admin_panel.cars' }}">Автомобили</a>
+        <a href="{{ url_for('admin_panel.reports') }}" class="{{ 'is-active' if request.endpoint == 'admin_panel.reports' }}">Жалобы</a>
+        <a href="{{ url_for('admin_panel.promo_codes') }}" class="{{ 'is-active' if request.endpoint == 'admin_panel.promo_codes' }}">Промокоды</a>
+        <a href="{{ url_for('admin_panel.logs') }}" class="{{ 'is-active' if request.endpoint == 'admin_panel.logs' }}">Журнал действий</a>
+      </nav>
+      <div>{% block admin_content %}{% endblock %}</div>
+    </div>
+  </div>
+</body>
+</html>

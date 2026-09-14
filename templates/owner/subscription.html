@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Тариф и подписка — KAVKAZ-CAR{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:24px; max-width:560px;">
+  <h1 style="font-size:22px;margin-bottom:20px;">Ваш тариф</h1>
+
+  <div class="stat-card" style="margin-bottom:24px;">
+    <div class="row" style="justify-content:space-between;">
+      <span class="badge {{ 'badge-pro' if plan == 'pro' else ('badge-business' if plan == 'business' else '') }}">{{ plan_info.name }}</span>
+      {% if subscription and subscription.expires_at %}<span class="text-muted" style="font-size:13px;">до {{ subscription.expires_at.strftime('%d.%m.%Y') }}</span>{% endif %}
+    </div>
+    <div class="spec-grid" style="margin-top:16px;">
+      <dt>Автомобили</dt><dd>{{ cars_used }} из {{ plan_info.max_cars }}</dd>
+      <dt>Фото на автомобиль</dt><dd>до {{ plan_info.max_photos_per_car }}</dd>
+      <dt>Поднятий в месяц</dt><dd>{{ boosts_left }} осталось</dd>
+    </div>
+  </div>
+
+  <div class="section-heading" style="margin-top:0;"><h2>Тарифы</h2></div>
+  <div class="stack">
+    {% for key, info in plans.items() %}
+      <div class="stat-card" style="{{ 'border-color:var(--accent);' if key == plan }}">
+        <div class="row" style="justify-content:space-between;">
+          <strong>{{ info.name }}</strong>
+          <span>{{ info.price }} ₽ / мес</span>
+        </div>
+        <p class="text-muted" style="font-size:13px;margin-top:6px;">
+          до {{ info.max_cars }} авто · до {{ info.max_photos_per_car }} фото · {{ info.boosts_per_month }} поднятий/мес
+        </p>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="section-heading"><h2>Промокод</h2></div>
+  <form method="post" action="{{ url_for('owner.redeem_promo') }}" class="row">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="text" name="code" placeholder="KC-PRO-XXXX" style="flex:1;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;color:var(--text-primary);">
+    <button type="submit" class="btn btn-primary">Активировать</button>
+  </form>
+  <p class="field-hint" style="margin-top:20px;">
+    Чтобы перейти на PRO или BUSINESS без промокода, свяжитесь с поддержкой{% if config.SUPPORT_PHONE %} по номеру {{ config.SUPPORT_PHONE }}{% endif %} — тариф будет активирован вручную.
+  </p>
+</div>
+{% endblock %}

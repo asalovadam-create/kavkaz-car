@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Личный кабинет — KAVKAZ-CAR{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <h1 style="font-size:24px;">Добрый день, {{ current_user.owner_profile.display_name if current_user.owner_profile else current_user.phone }}</h1>
+
+  <div class="stat-strip" style="margin-top:20px;">
+    <div class="stat-card">
+      <div class="stat-card__label">Ваши автомобили</div>
+      <div class="stat-card__value">{{ cars|length }}</div>
+      <div class="stat-card__sub">из {{ plan_info.max_cars }} на тарифе {{ plan_info.name }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Просмотры</div>
+      <div class="stat-card__value">{{ views_total }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Контакты</div>
+      <div class="stat-card__value">{{ contacts_total }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Тариф</div>
+      <div class="stat-card__value">{{ plan_info.name }}</div>
+      <div class="stat-card__sub">{% if subscription and subscription.expires_at %}до {{ subscription.expires_at.strftime('%d.%m.%Y') }}{% else %}бессрочно{% endif %}</div>
+    </div>
+  </div>
+
+  <div class="section-heading">
+    <h2>Ваши автомобили</h2>
+    <a href="{{ url_for('owner.wizard_start') }}" class="btn btn-primary btn-sm">+ Добавить автомобиль</a>
+  </div>
+
+  {% if cars %}
+    {% for car in cars %}
+      <div class="owner-car-row">
+        {% set photo = car.primary_photo() %}
+        <img src="{{ photo.thumbnail_url if photo else '' }}" alt="">
+        <div class="owner-car-row__body">
+          <div class="owner-car-row__title">{{ car.title() }}</div>
+          <div class="owner-car-row__meta">
+            <span class="status-dot status-{{ car.status }}">{{ car.status }}</span>
+            {% if car.is_stale() %} · <span style="color:var(--danger);">требует подтверждения</span>{% endif %}
+          </div>
+        </div>
+        <div class="owner-car-row__actions">
+          <button type="button" class="btn btn-ghost btn-sm" data-confirm-actual="{{ url_for('owner.confirm_actual', public_id=car.public_id) }}">Подтвердить актуальность</button>
+          <a href="{{ url_for('owner.edit_car', public_id=car.public_id) }}" class="btn btn-ghost btn-sm">Редактировать</a>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <h3>Автомобилей пока нет</h3>
+      <p>Добавьте первый автомобиль — это займёт пару минут.</p>
+      <a href="{{ url_for('owner.wizard_start') }}" class="btn btn-primary">Добавить автомобиль</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

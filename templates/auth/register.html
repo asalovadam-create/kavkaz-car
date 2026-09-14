@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Регистрация владельца — KAVKAZ-CAR{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:40px; max-width:420px;">
+  <h1 style="font-size:24px;margin-bottom:6px;">Я сдаю автомобиль</h1>
+  <p class="text-muted" style="margin-bottom:24px;">Регистрация занимает меньше минуты.</p>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field">
+      <label for="phone">Телефон</label>
+      <input id="phone" name="phone" type="tel" placeholder="+7 900 000-00-00" value="{{ phone|default('') }}" required autofocus>
+    </div>
+    <div class="field">
+      <label for="password">Пароль</label>
+      <input id="password" name="password" type="password" minlength="8" required>
+      <p class="field-hint">Не короче 8 символов.</p>
+    </div>
+    <div class="field">
+      <label for="password_confirm">Повторите пароль</label>
+      <input id="password_confirm" name="password_confirm" type="password" minlength="8" required>
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">Зарегистрироваться</button>
+  </form>
+  <p class="text-muted" style="margin-top:18px;text-align:center;">
+    Уже есть аккаунт? <a href="{{ url_for('auth.login') }}" style="color:var(--accent-strong);">Войти</a>
+  </p>
+  <p class="text-muted" style="margin-top:14px;font-size:12px;text-align:center;">
+    Регистрируясь, вы принимаете <a href="{{ url_for('main.terms') }}">пользовательское соглашение</a> и <a href="{{ url_for('main.privacy') }}">политику конфиденциальности</a>.
+  </p>
+</div>
+{% endblock %}

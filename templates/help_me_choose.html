@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Помогите выбрать автомобиль — KAVKAZ-CAR{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:24px; max-width:520px;">
+  <h1 style="font-size:22px;margin-bottom:6px;">Не знаете, что выбрать?</h1>
+  <p class="text-muted" style="margin-bottom:24px;">Ответьте на несколько вопросов — подберём 3 подходящих варианта.</p>
+
+  <form id="help-form" method="post" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="field budget-slider">
+      <label>Бюджет в сутки</label>
+      <div class="budget-value" id="budget-value">15 000 ₽ / сутки</div>
+      <input type="range" id="budget-range" name="budget" min="2000" max="60000" step="1000" value="15000">
+    </div>
+
+    <div class="field">
+      <label for="event">Для чего нужна машина?</label>
+      <select id="event" name="event">
+        {% for value, label in event_types %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="seats">Сколько человек?</label>
+      <input id="seats" type="number" name="seats" min="1" max="8" value="2">
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-block">Показать варианты</button>
+  </form>
+
+  <div id="help-results" style="margin-top:24px;"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('help-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var formData = new URLSearchParams(new FormData(this));
+    fetch(window.location.pathname, {
+      method: 'POST', body: formData,
+      headers: {'X-Requested-With': 'XMLHttpRequest'},
+    }).then(function (r) { return r.text(); })
+      .then(function (html) { document.getElementById('help-results').innerHTML = html; });
+  });
+</script>
+{% endblock %}

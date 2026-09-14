@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Ошибка — KAVKAZ-CAR{% endblock %}
+{% block content %}
+<div class="container empty-state">
+  <h3>Не удалось загрузить страницу</h3>
+  <p>Попробуйте ещё раз через минуту.</p>
+  <a href="{{ url_for('main.home') }}" class="btn btn-primary">Повторить</a>
+</div>
+{% endblock %}

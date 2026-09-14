@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Пожаловаться на объявление — KAVKAZ-CAR{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:24px; max-width:520px;">
+  <h1 style="font-size:22px;margin-bottom:6px;">Пожаловаться на объявление</h1>
+  <p class="text-muted" style="margin-bottom:24px;">{{ car.title() }} · {{ car.city.name }}</p>
+
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field">
+      <label for="reason">Причина</label>
+      <select id="reason" name="reason" required>
+        {% for value, label in reasons %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="message">Комментарий (необязательно)</label>
+      <textarea id="message" name="message" rows="4" maxlength="1000"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">Отправить жалобу</button>
+  </form>
+</div>
+{% endblock %}

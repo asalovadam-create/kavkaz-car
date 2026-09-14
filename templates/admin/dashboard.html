@@ -1,0 +1,24 @@
+{% extends "admin/_base.html" %}
+{% block admin_content %}
+  <div class="stat-strip" style="margin-bottom:24px;">
+    <div class="stat-card"><div class="stat-card__label">Пользователи</div><div class="stat-card__value">{{ stats.users_count }}</div></div>
+    <div class="stat-card"><div class="stat-card__label">Автомобили</div><div class="stat-card__value">{{ stats.cars_count }}</div></div>
+    <div class="stat-card"><div class="stat-card__label">Опубликовано</div><div class="stat-card__value">{{ stats.published_count }}</div></div>
+    <div class="stat-card"><div class="stat-card__label">Новые жалобы</div><div class="stat-card__value">{{ stats.new_reports }}</div></div>
+  </div>
+
+  <h3 style="margin-bottom:12px;">Последние действия</h3>
+  <table class="data-table">
+    <thead><tr><th>Время</th><th>Действие</th><th>Объект</th><th>IP</th></tr></thead>
+    <tbody>
+      {% for log in recent_logs %}
+        <tr>
+          <td>{{ log.created_at.strftime('%d.%m %H:%M') }}</td>
+          <td>{{ log.action }}</td>
+          <td>{{ log.target_type or '—' }} {{ log.target_id or '' }}</td>
+          <td>{{ log.ip or '—' }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

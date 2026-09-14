@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}{{ car.title() }} — аренда в {{ car.city.name }} | KAVKAZ-CAR{% endblock %}
+{% block description %}{{ car.title() }} в аренду в {{ car.city.name }}. {{ format_price(car.price_per_day) }}. Свяжитесь с владельцем напрямую.{% endblock %}
+{% block og_title %}{{ car.title() }} — аренда в {{ car.city.name }}{% endblock %}
+{% block og_description %}{{ format_price(car.price_per_day) }} / сутки · {{ car.city.name }}{% endblock %}
+{% block og_image %}{% if car.primary_photo() %}<meta property="og:image" content="{{ request.url_root.rstrip('/') }}{{ car.primary_photo().url }}">{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:20px;">
+
+  <div class="car-hero" data-gallery>
+    <div class="car-hero__main">
+      <img data-gallery-main src="{{ car.primary_photo().url if car.primary_photo() else '' }}" alt="{{ car.title() }}">
+    </div>
+    <div class="car-hero__swipe">
+      {% for photo in car.photos %}
+        <img src="{{ photo.url }}" alt="{{ car.title() }} — фото {{ loop.index }}">
+      {% else %}
+        <div class="skeleton" style="aspect-ratio:4/3;"></div>
+      {% endfor %}
+    </div>
+    <div class="car-hero__thumbs">
+      {% for photo in car.photos %}
+        <img data-gallery-thumb="{{ photo.url }}" src="{{ photo.thumbnail_url or photo.url }}" class="{{ 'is-active' if loop.first }}" alt="">
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="car-detail__header">
+    <div class="car-detail__title">
+      <h1>{{ car.title() }}</h1>
+      <div class="car-card__meta">
+        <svg class="icon" style="width:14px;height:14px;"><use href="#icon-location"></use></svg>{{ car.city.name }}
+        {% if car.owner.owner_profile and car.owner.owner_profile.company_name %}
+          · <span class="badge badge-business">{{ car.owner.current_plan()|upper }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="car-detail__price">
+      {{ format_price(car.price_per_day) }}
+      {% if car.price_per_day %}<span>/ сутки</span>{% endif %}
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:14px;">
+    <button type="button" class="btn btn-ghost btn-sm" data-fav-toggle="{{ car.public_id }}" style="{{ 'color:var(--accent-strong);' if is_favorite }}">
+      <svg class="icon" style="width:16px;height:16px;"><use href="#icon-heart"></use></svg>{{ 'В избранном' if is_favorite else 'В избранное' }}
+    </button>
+    <button type="button" class="btn btn-ghost btn-sm" data-compare-toggle="{{ car.public_id }}">
+      <svg class="icon" style="width:16px;height:16px;"><use href="#icon-scale"></use></svg>Сравнить
+    </button>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="navigator.share ? navigator.share({title:document.title, url:window.location.href}) : (navigator.clipboard.writeText(window.location.href), this.textContent='Ссылка скопирована')">
+      <svg class="icon" style="width:16px;height:16px;"><use href="#icon-share"></use></svg>Поделиться
+    </button>
+  </div>
+
+  <div class="trust-row">
+    {% if car.owner.owner_profile and car.owner.owner_profile.phone_verified %}
+      <span class="trust-chip"><svg><use href="#icon-shield"></use></svg>Телефон подтверждён</span>
+    {% endif %}
+    {% if not car.is_stale() %}
+      <span class="trust-chip"><svg><use href="#icon-check"></use></svg>Актуально сегодня</span>
+    {% else %}
+      <span class="trust-chip" style="color:var(--danger);">Цена может быть неактуальна</span>
+    {% endif %}
+    {% if car.owner.owner_profile %}
+      <span class="trust-chip">Профиль заполнен на {{ car.owner.owner_profile.profile_completion_percent() }}%</span>
+    {% endif %}
+  </div>
+
+  <div class="contact-actions">
+    <a href="{{ url_for('cars.contact_redirect', public_id=car.public_id, channel='call') }}" class="btn btn-primary">
+      <svg class="icon" style="width:16px;height:16px;"><use href="#icon-phone"></use></svg>Позвонить
+    </a>
+    {% if car.whatsapp %}
+      <a href="{{ url_for('cars.contact_redirect', public_id=car.public_id, channel='whatsapp') }}" target="_blank" rel="noopener" class="btn btn-ghost">WhatsApp</a>
+    {% endif %}
+    {% if car.telegram %}
+      <a href="{{ url_for('cars.contact_redirect', public_id=car.public_id, channel='telegram') }}" target="_blank" rel="noopener" class="btn btn-ghost">Telegram</a>
+    {% endif %}
+  </div>
+
+  <div class="disclaimer-box">
+    <svg><use href="#icon-warning"></use></svg>
+    <span>Условия аренды, залог и окончательная цена уточняются у владельца. Автомобиль размещён владельцем — KAVKAZ-CAR не является стороной сделки.</span>
+  </div>
+
+  <div class="info-block">
+    <h3>Характеристики</h3>
+    <dl class="spec-grid">
+      <dt>Год выпуска</dt><dd>{{ car.year or '—' }}</dd>
+      <dt>Коробка передач</dt><dd>{{ 'Автомат' if car.transmission_auto else 'Механика' }}</dd>
+      <dt>Мест</dt><dd>{{ car.seats or '—' }}</dd>
+      <dt>С водителем</dt><dd>{{ 'Да' if car.with_driver else 'Нет' }}</dd>
+      <dt>Для свадьбы</dt><dd>{{ 'Да' if car.for_wedding else 'Нет' }}</dd>
+      <dt>Доставка</dt><dd>{{ 'Да' if car.delivery_available else 'Нет' }}</dd>
+    </dl>
+  </div>
+
+  {% if car.description %}
+    <div class="info-block">
+      <h3>Описание</h3>
+      <p class="text-muted">{{ car.description }}</p>
+    </div>
+  {% endif %}
+
+  <div class="info-block">
+    <h3>Условия аренды</h3>
+    <p class="text-muted">Минимальный срок аренды: {{ car.min_rental_days }} {{ 'день' if car.min_rental_days == 1 else 'дня' }}.
+    {% if car.extra_terms %}{{ car.extra_terms }}{% endif %}</p>
+  </div>
+
+  {% if car.owner.owner_profile %}
+    <div class="info-block">
+      <h3>О владельце</h3>
+      <p><strong>{{ car.owner.owner_profile.company_name or car.owner.owner_profile.display_name }}</strong></p>
+      {% if car.owner.owner_profile.description %}<p class="text-muted" style="margin-top:6px;">{{ car.owner.owner_profile.description }}</p>{% endif %}
+    </div>
+  {% endif %}
+
+  {% if similar_cars %}
+    <div class="section-heading"><h2>Другие автомобили этого владельца</h2></div>
+    <div class="car-grid">
+      {% for c in similar_cars %}{% set car = c %}{% include "partials/car_card.html" %}{% endfor %}
+    </div>
+  {% endif %}
+
+  <p class="text-center" style="margin:30px 0;">
+    <a href="{{ url_for('cars.report_car', public_id=car.public_id) }}" class="text-muted" style="font-size:13px;">Пожаловаться на объявление</a>
+  </p>
+</div>
+{% endblock %}

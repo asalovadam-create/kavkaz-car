@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Профиль владельца — KAVKAZ-CAR{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:24px; max-width:520px;">
+  <h1 style="font-size:22px;margin-bottom:20px;">Профиль</h1>
+
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field">
+      <label for="display_name">Имя / название</label>
+      <input id="display_name" name="display_name" value="{{ profile.display_name }}" required>
+    </div>
+    {% if plan == 'business' %}
+      <div class="field">
+        <label for="company_name">Название проката</label>
+        <input id="company_name" name="company_name" value="{{ profile.company_name or '' }}">
+      </div>
+    {% endif %}
+    <div class="field">
+      <label for="description">Описание</label>
+      <textarea id="description" name="description" rows="4">{{ profile.description or '' }}</textarea>
+    </div>
+    <div class="field">
+      <label for="work_hours">График работы</label>
+      <input id="work_hours" name="work_hours" placeholder="Например, ежедневно с 9:00 до 21:00" value="{{ profile.work_hours or '' }}">
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">Сохранить</button>
+  </form>
+
+  <div class="info-block">
+    <h3>Доверие</h3>
+    <p class="text-muted">Профиль заполнен на {{ profile.profile_completion_percent() }}%.
+    {% if not profile.phone_verified %}Телефон ещё не подтверждён.{% else %}Телефон подтверждён.{% endif %}</p>
+  </div>
+</div>
+{% endblock %}

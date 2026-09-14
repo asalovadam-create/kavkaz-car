@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Добавить автомобиль — шаг {{ steps.index(step) + 1 }} из {{ steps|length }} — KAVKAZ-CAR{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:24px; max-width:560px;">
+  <div class="wizard-steps">
+    {% for s in steps %}
+      <span class="{{ 'is-done' if steps.index(s) < steps.index(step) else ('is-current' if s == step else '') }}"></span>
+    {% endfor %}
+  </div>
+
+  <form method="post" class="wizard-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% block wizard_content %}{% endblock %}
+
+    <div class="row" style="margin-top:28px;">
+      {% if steps.index(step) > 0 %}
+        <a href="{{ url_for('owner.wizard_step', step=steps[steps.index(step)-1]) }}" class="btn btn-ghost">Назад</a>
+      {% endif %}
+      <button type="submit" class="btn btn-primary" style="flex:1;">
+        {{ 'Опубликовать автомобиль' if step == 'review' else 'Далее' }}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

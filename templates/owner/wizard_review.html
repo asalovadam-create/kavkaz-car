@@ -1,0 +1,28 @@
+{% extends "owner/_wizard_base.html" %}
+{% block wizard_content %}
+  <h1>Проверьте объявление</h1>
+  <p class="wizard-card__hint">Всё верно? После публикации автомобиль появится в каталоге.</p>
+
+  <div class="car-card" style="max-width:320px;">
+    <div class="car-card__media">
+      {% set photos = draft.get('photo_temp_urls', []) %}
+      {% if photos %}
+        <img src="{{ photos[0].thumbnail_url }}" alt="">
+      {% else %}
+        <div class="skeleton" style="width:100%;height:100%;"></div>
+      {% endif %}
+      <span class="car-card__status" style="background:rgba(0,0,0,0.5);">AVAILABLE</span>
+    </div>
+    <div class="car-card__body">
+      <div class="car-card__brand">{{ draft.get('brand') }}</div>
+      <div class="car-card__model">{{ draft.get('model') }}{% if draft.get('year') %} · {{ draft.get('year') }}{% endif %}</div>
+      <div class="car-card__price">{{ format_price(draft.get('price_per_day')) }}{% if draft.get('price_per_day') %}<span> / сутки</span>{% endif %}</div>
+      <div class="car-card__meta">{{ draft.get('city_slug', '') }}</div>
+    </div>
+  </div>
+
+  <div class="disclaimer-box" style="margin-top:20px;">
+    <svg><use href="#icon-warning"></use></svg>
+    <span>Публикуя объявление, вы подтверждаете, что являетесь владельцем автомобиля или уполномочены на его размещение, и принимаете <a href="{{ url_for('main.listing_rules') }}">правила размещения</a>.</span>
+  </div>
+{% endblock %}

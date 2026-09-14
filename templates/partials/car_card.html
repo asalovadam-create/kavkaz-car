@@ -1,0 +1,31 @@
+<article class="car-card" data-car-card>
+  <a href="{{ car_detail_url(car) }}" class="car-card__media">
+    {% set photo = car.primary_photo() %}
+    {% if photo %}
+      <img src="{{ photo.thumbnail_url or photo.url }}" alt="{{ car.title() }}" loading="lazy">
+    {% else %}
+      <div class="skeleton" style="width:100%;height:100%;"></div>
+    {% endif %}
+    {% if car.is_boosted_until and car.is_boosted_until.timestamp() > now_ts %}
+      <span class="car-card__status" style="background:var(--accent);color:var(--accent-ink);">TODAY</span>
+    {% else %}
+      <span class="car-card__status" style="background:rgba(0,0,0,0.5);">AVAILABLE</span>
+    {% endif %}
+  </a>
+  <button type="button" class="car-card__fav" data-fav-toggle="{{ car.public_id }}" aria-label="В избранное" style="background:rgba(0,0,0,0.35);">
+    <svg class="icon"><use href="#icon-heart"></use></svg>
+  </button>
+  <button type="button" class="car-card__fav" data-compare-toggle="{{ car.public_id }}" aria-label="Добавить к сравнению" style="background:rgba(0,0,0,0.35); top:48px;">
+    <svg class="icon"><use href="#icon-scale"></use></svg>
+  </button>
+
+  <div class="car-card__body">
+    <div class="car-card__brand">{{ car.brand }}</div>
+    <div class="car-card__model">{{ car.model }}{% if car.year %} · {{ car.year }}{% endif %}</div>
+    <div class="car-card__price">{{ format_price(car.price_per_day) }}{% if car.price_per_day %}<span> / сутки</span>{% endif %}</div>
+    <div class="car-card__meta">
+      <svg class="icon" style="width:13px;height:13px;"><use href="#icon-location"></use></svg>{{ car.city.name }}
+    </div>
+    <a href="{{ car_detail_url(car) }}" class="car-card__cta">Открыть</a>
+  </div>
+</article>

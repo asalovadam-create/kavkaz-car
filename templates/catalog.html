@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Каталог автомобилей в аренду — KAVKAZ-CAR{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="section-heading" style="margin-top:24px;">
+    <h2>{{ total_count }} автомобилей{% if request.args.get('city') %} в этом городе{% endif %}</h2>
+    <button type="button" class="btn btn-ghost btn-sm" data-sheet-open="filters-sheet">
+      <svg class="icon" style="width:16px;height:16px;"><use href="#icon-filter"></use></svg>Фильтры
+    </button>
+  </div>
+
+  <form id="catalog-form" method="get" class="filters-bar">
+    <input type="hidden" name="q" value="{{ request.args.get('q','') }}">
+    <button type="button" class="filter-pill {{ 'is-active' if request.args.get('with_driver') }}" onclick="toggleParam('with_driver')">С водителем</button>
+    <button type="button" class="filter-pill {{ 'is-active' if request.args.get('for_wedding') }}" onclick="toggleParam('for_wedding')">Для свадьбы</button>
+    <button type="button" class="filter-pill {{ 'is-active' if request.args.get('delivery') }}" onclick="toggleParam('delivery')">Доставка</button>
+    <button type="button" class="filter-pill {{ 'is-active' if request.args.get('automatic') }}" onclick="toggleParam('automatic')">Автомат</button>
+    <button type="button" class="filter-pill {{ 'is-active' if request.args.get('premium') }}" onclick="toggleParam('premium')">Премиум</button>
+  </form>
+
+  <div id="catalog-results">
+    {% include "partials/car_grid.html" %}
+  </div>
+</div>
+
+<div class="sheet-backdrop"></div>
+<div id="filters-sheet" class="bottom-sheet glass">
+  <div class="bottom-sheet__handle"></div>
+  <h3>Фильтры</h3>
+  <form method="get" action="{{ url_for('cars.catalog') }}" class="stack" style="margin-top:16px;">
+    <div class="field">
+      <label for="f-city">Город</label>
+      <select id="f-city" name="city">
+        <option value="">Любой город</option>
+        {% for city in cities %}
+          <option value="{{ city.slug }}" {{ 'selected' if request.args.get('city') == city.slug }}>{{ city.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="f-body">Тип кузова</label>
+      <select id="f-body" name="body_type">
+        <option value="">Любой</option>
+        {% for value, label in body_types %}
+          <option value="{{ value }}" {{ 'selected' if request.args.get('body_type') == value }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="f-price">Бюджет, до ₽/сутки</label>
+      <input id="f-price" type="number" name="price_max" value="{{ request.args.get('price_max','') }}">
+    </div>
+    <div class="field">
+      <label for="f-year">Год выпуска, от</label>
+      <input id="f-year" type="number" name="year_min" value="{{ request.args.get('year_min','') }}">
+    </div>
+    <div class="field">
+      <label for="f-seats">Мест, от</label>
+      <input id="f-seats" type="number" name="seats_min" value="{{ request.args.get('seats_min','') }}">
+    </div>
+
+    <div class="toggle-row">
+      <span>Без водителя</span>
+      <label class="switch"><input type="checkbox" name="no_driver" value="1" {{ 'checked' if request.args.get('no_driver') }}><span class="switch__track"></span></label>
+    </div>
+    <div class="toggle-row">
+      <span>Премиум-класс</span>
+      <label class="switch"><input type="checkbox" name="premium" value="1" {{ 'checked' if request.args.get('premium') }}><span class="switch__track"></span></label>
+    </div>
+
+    <div class="bottom-sheet__actions">
+      <button type="button" class="btn btn-ghost" data-sheet-close>Отмена</button>
+      <button type="submit" class="btn btn-primary btn-block">Показать</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleParam(name) {
+    var url = new URL(window.location.href);
+    if (url.searchParams.get(name) === '1') {
+      url.searchParams.delete(name);
+    } else {
+      url.searchParams.set(name, '1');
+    }
+    window.location.href = url.toString();
+  }
+</script>
+{% endblock %}

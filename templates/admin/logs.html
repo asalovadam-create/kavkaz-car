@@ -1,0 +1,17 @@
+{% extends "admin/_base.html" %}
+{% block admin_content %}
+  <table class="data-table">
+    <thead><tr><th>Время</th><th>Админ</th><th>Действие</th><th>Объект</th><th>IP</th></tr></thead>
+    <tbody>
+      {% for log in logs %}
+        <tr>
+          <td>{{ log.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+          <td>#{{ log.admin_id }}</td>
+          <td>{{ log.action }}</td>
+          <td>{{ log.target_type or '—' }} {{ log.target_id or '' }}</td>
+          <td>{{ log.ip or '—' }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

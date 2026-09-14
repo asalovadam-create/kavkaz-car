@@ -1,0 +1,39 @@
+{% extends "admin/_base.html" %}
+{% block admin_content %}
+  <form method="get" class="row" style="margin-bottom:16px;">
+    <input type="text" name="q" value="{{ q }}" placeholder="Поиск по телефону" style="flex:1;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;color:var(--text-primary);">
+    <button type="submit" class="btn btn-ghost btn-sm">Найти</button>
+  </form>
+
+  <table class="data-table">
+    <thead><tr><th>Телефон</th><th>Тариф</th><th>Автомобили</th><th>Статус</th><th>Действия</th></tr></thead>
+    <tbody>
+      {% for user in users %}
+        <tr>
+          <td>{{ user.phone }}</td>
+          <td>{{ user.current_plan()|upper }}</td>
+          <td>{{ user.cars|length }}</td>
+          <td>{{ 'Заблокирован' if user.is_blocked else 'Активен' }}</td>
+          <td>
+            <div class="row">
+              <form method="post" action="{{ url_for('admin_panel.toggle_block_user', user_id=user.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-ghost btn-sm">{{ 'Разблокировать' if user.is_blocked else 'Заблокировать' }}</button>
+              </form>
+              <form method="post" action="{{ url_for('admin_panel.set_plan', user_id=user.id) }}" class="row">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <select name="plan" style="background:var(--bg-surface);color:var(--text-primary);border:1px solid var(--border);border-radius:8px;padding:6px;">
+                  <option value="free">FREE</option>
+                  <option value="pro">PRO</option>
+                  <option value="business">BUSINESS</option>
+                </select>
+                <input type="number" name="days" value="30" style="width:60px;background:var(--bg-surface);color:var(--text-primary);border:1px solid var(--border);border-radius:8px;padding:6px;">
+                <button type="submit" class="btn btn-ghost btn-sm">Установить</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

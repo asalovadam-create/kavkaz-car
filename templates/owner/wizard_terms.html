@@ -1,0 +1,35 @@
+{% extends "owner/_wizard_base.html" %}
+{% block wizard_content %}
+  <h1>Условия аренды</h1>
+  <p class="wizard-card__hint">Это увидят все пользователи в карточке.</p>
+
+  <div class="field">
+    <label for="price_per_day">Цена, ₽ / сутки</label>
+    <input id="price_per_day" name="price_per_day" type="number" min="0" value="{{ draft.get('price_per_day','') }}" placeholder="Оставьте пустым для «цена по запросу»">
+  </div>
+  <div class="field">
+    <label for="min_rental_days">Минимальный срок аренды, дней</label>
+    <input id="min_rental_days" name="min_rental_days" type="number" min="1" value="{{ draft.get('min_rental_days', 1) }}">
+  </div>
+  <div class="field">
+    <label for="description">Описание</label>
+    <textarea id="description" name="description" rows="4" maxlength="2000">{{ draft.get('description','') }}</textarea>
+  </div>
+
+  <div class="toggle-row">
+    <span>Коробка автомат</span>
+    <label class="switch"><input type="checkbox" name="transmission_auto" value="1" {{ 'checked' if draft.get('transmission_auto', True) }}><span class="switch__track"></span></label>
+  </div>
+  <div class="toggle-row">
+    <span>С водителем</span>
+    <label class="switch"><input type="checkbox" name="with_driver" value="1" {{ 'checked' if draft.get('with_driver') }}><span class="switch__track"></span></label>
+  </div>
+  <div class="toggle-row">
+    <span>Подходит для свадьбы</span>
+    <label class="switch"><input type="checkbox" name="for_wedding" value="1" {{ 'checked' if draft.get('for_wedding') }}><span class="switch__track"></span></label>
+  </div>
+  <div class="toggle-row">
+    <span>Доставка автомобиля</span>
+    <label class="switch"><input type="checkbox" name="delivery_available" value="1" {{ 'checked' if draft.get('delivery_available') }}><span class="switch__track"></span></label>
+  </div>
+{% endblock %}

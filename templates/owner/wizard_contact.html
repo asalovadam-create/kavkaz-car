@@ -1,0 +1,23 @@
+{% extends "owner/_wizard_base.html" %}
+{% block wizard_content %}
+  <h1>Как с вами связаться?</h1>
+  <p class="wizard-card__hint">Клиенты будут звонить и писать напрямую вам.</p>
+
+  <div class="field">
+    <label for="phone">Телефон для звонков</label>
+    <input id="phone" name="phone" type="tel" value="{{ draft.get('phone','') }}" required>
+  </div>
+  <div class="field">
+    <label for="whatsapp">WhatsApp (необязательно)</label>
+    <input id="whatsapp" name="whatsapp" type="tel" value="{{ draft.get('whatsapp','') }}">
+  </div>
+  <div class="field">
+    <label for="telegram">Telegram (необязательно)</label>
+    <input id="telegram" name="telegram" type="text" placeholder="@username" value="{{ draft.get('telegram','') }}">
+  </div>
+
+  <label class="checkbox-row">
+    <input type="checkbox" name="contact_consent" value="1" required {{ 'checked' if draft.get('contact_consent') }}>
+    Я разрешаю отображать указанные контакты пользователям KAVKAZ-CAR.
+  </label>
+{% endblock %}

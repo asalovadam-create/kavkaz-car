@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Войти — KAVKAZ-CAR{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:40px; max-width:420px;">
+  <h1 style="font-size:24px;margin-bottom:24px;">Вход</h1>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field">
+      <label for="phone">Телефон</label>
+      <input id="phone" name="phone" type="tel" placeholder="+7 900 000-00-00" value="{{ phone|default('') }}" required autofocus>
+    </div>
+    <div class="field">
+      <label for="password">Пароль</label>
+      <input id="password" name="password" type="password" required>
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">Войти</button>
+  </form>
+  <p class="text-muted" style="margin-top:18px;text-align:center;">
+    Нет аккаунта? <a href="{{ url_for('auth.register') }}" style="color:var(--accent-strong);">Зарегистрироваться</a>
+  </p>
+</div>
+{% endblock %}

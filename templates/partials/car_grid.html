@@ -1,0 +1,18 @@
+{% if cars %}
+  <div class="car-grid">
+    {% for car in cars %}
+      {% include "partials/car_card.html" %}
+    {% endfor %}
+  </div>
+  {% if has_more %}
+    <div class="text-center" style="margin-top:24px;">
+      <a href="?{{ request.query_string.decode() }}&page={{ next_page }}" class="btn btn-ghost">Показать ещё</a>
+    </div>
+  {% endif %}
+{% else %}
+  <div class="empty-state">
+    <h3>Пока ничего не найдено</h3>
+    <p>Попробуйте изменить фильтры или выбрать другой город.</p>
+    <a href="{{ url_for('cars.catalog') }}" class="btn btn-ghost">Сбросить фильтры</a>
+  </div>
+{% endif %}

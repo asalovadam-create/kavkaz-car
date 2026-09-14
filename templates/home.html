@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}KAVKAZ-CAR — найди автомобиль для своего момента{% endblock %}
+
+{% block content %}
+<section class="hero container">
+  <h1>Найди автомобиль<br>для своего момента</h1>
+
+  <form class="search-panel glass" action="{{ url_for('cars.catalog') }}" method="get">
+    <div class="search-panel__grid">
+      <div class="search-panel__field">
+        <label for="s-city">Где</label>
+        <select id="s-city" name="city">
+          <option value="">Любой город</option>
+          {% for city in cities %}
+            <option value="{{ city.slug }}">{{ city.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="search-panel__field">
+        <label for="s-q">Что ищем</label>
+        <input id="s-q" name="q" type="text" placeholder="Mercedes, BMW, любой">
+      </div>
+      <div class="search-panel__field">
+        <label for="s-price">Бюджет</label>
+        <input id="s-price" name="price_max" type="number" placeholder="до 20 000 ₽">
+      </div>
+      <div class="search-panel__field">
+        <label for="s-body">Кузов</label>
+        <select id="s-body" name="body_type">
+          <option value="">Любой</option>
+          {% for value, label in body_types %}
+            <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="search-panel__submit">
+        <button type="submit" class="btn btn-primary btn-block">Показать автомобили</button>
+      </div>
+    </div>
+  </form>
+
+  <div class="event-picker">
+    <span class="text-muted" style="align-self:center; font-size:13px; padding-right:4px;">Для чего нужна машина?</span>
+    {% for value, label in event_types %}
+      <a href="{{ url_for('cars.help_me_choose') }}" class="event-chip">{{ label }}</a>
+    {% endfor %}
+  </div>
+</section>
+
+<div class="container">
+  <div class="section-heading">
+    <h2>Доступно сейчас</h2>
+    <a href="{{ url_for('cars.catalog') }}">Смотреть все →</a>
+  </div>
+
+  {% if featured_cars %}
+    <div class="car-grid">
+      {% for car in featured_cars %}
+        {% include "partials/car_card.html" %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <h3>Пока автомобилей нет</h3>
+      <p>Станьте первым владельцем на KAVKAZ-CAR в вашем городе.</p>
+      <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Разместить автомобиль</a>
+    </div>
+  {% endif %}
+
+  <div id="cities" class="section-heading">
+    <h2>Города Северного Кавказа</h2>
+  </div>
+  <div class="filters-bar">
+    {% for city in cities %}
+      <a href="{{ url_for('cars.city_page', city_slug=city.slug) }}" class="filter-pill">
+        <svg class="icon" style="width:14px;height:14px;"><use href="#icon-location"></use></svg>{{ city.name }}
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

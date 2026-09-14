@@ -1,0 +1,33 @@
+{% extends "owner/_wizard_base.html" %}
+{% block wizard_content %}
+  <h1>Что за автомобиль?</h1>
+  <p class="wizard-card__hint">Основная информация для карточки.</p>
+
+  <div class="field">
+    <label for="brand">Марка</label>
+    <input list="brand-list" id="brand" name="brand" value="{{ draft.get('brand','') }}" required autofocus>
+    <datalist id="brand-list">
+      {% for brand in brands %}<option value="{{ brand }}">{% endfor %}
+    </datalist>
+  </div>
+  <div class="field">
+    <label for="model">Модель</label>
+    <input id="model" name="model" value="{{ draft.get('model','') }}" placeholder="Например, W223" required>
+  </div>
+  <div class="field">
+    <label for="year">Год выпуска</label>
+    <input id="year" name="year" type="number" min="1990" max="2027" value="{{ draft.get('year','') }}">
+  </div>
+  <div class="field">
+    <label for="body_type">Тип кузова</label>
+    <select id="body_type" name="body_type">
+      {% for value, label in body_types %}
+        <option value="{{ value }}" {{ 'selected' if draft.get('body_type') == value }}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label for="seats">Количество мест</label>
+    <input id="seats" name="seats" type="number" min="1" max="9" value="{{ draft.get('seats', 4) }}">
+  </div>
+{% endblock %}

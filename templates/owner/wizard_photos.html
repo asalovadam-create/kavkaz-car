@@ -1,0 +1,20 @@
+{% extends "owner/_wizard_base.html" %}
+{% block wizard_content %}
+  <h1>Покажите автомобиль</h1>
+  <p class="wizard-card__hint">Первое фото будет главным в карточке.</p>
+
+  <label for="photo-input" class="photo-drop">
+    <svg class="icon" style="width:28px;height:28px;margin:0 auto 10px;"><use href="#icon-camera"></use></svg>
+    <div>+ Добавить фото</div>
+    <div class="field-hint">JPEG, PNG или WEBP</div>
+  </label>
+  <input id="photo-input" type="file" accept="image/jpeg,image/png,image/webp" multiple
+         style="display:none;" data-photo-upload="{{ url_for('owner.wizard_upload_photo') }}"
+         data-preview-target="photo-preview">
+
+  <div id="photo-preview" class="photo-preview-grid">
+    {% for photo in draft.get('photo_temp_urls', []) %}
+      <img src="{{ photo.thumbnail_url }}" class="{{ 'is-primary' if loop.first }}">
+    {% endfor %}
+  </div>
+{% endblock %}

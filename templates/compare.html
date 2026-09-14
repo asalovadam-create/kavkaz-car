@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Сравнение автомобилей — KAVKAZ-CAR{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <h1 style="font-size:22px;margin-bottom:20px;">Сравнение</h1>
+
+  {% if cars|length < 2 %}
+    <div class="empty-state">
+      <h3>Выберите хотя бы 2 автомобиля</h3>
+      <p>Нажмите «Сравнить» на карточках в каталоге, чтобы добавить их сюда.</p>
+      <a href="{{ url_for('cars.catalog') }}" class="btn btn-primary">Перейти в каталог</a>
+    </div>
+  {% else %}
+    <div style="overflow-x:auto;">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            {% for car in cars %}<th>{{ car.brand }} {{ car.model }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Фото</td>
+            {% for car in cars %}<td><img src="{{ car.primary_photo().thumbnail_url if car.primary_photo() else '' }}" style="width:100%;border-radius:8px;"></td>{% endfor %}
+          </tr>
+          <tr><td>Цена</td>{% for car in cars %}<td>{{ format_price(car.price_per_day) }}</td>{% endfor %}</tr>
+          <tr><td>Год</td>{% for car in cars %}<td>{{ car.year or '—' }}</td>{% endfor %}</tr>
+          <tr><td>Город</td>{% for car in cars %}<td>{{ car.city.name }}</td>{% endfor %}</tr>
+          <tr><td>Водитель</td>{% for car in cars %}<td>{{ '✓' if car.with_driver else '—' }}</td>{% endfor %}</tr>
+          <tr><td>Свадьба</td>{% for car in cars %}<td>{{ '✓' if car.for_wedding else '—' }}</td>{% endfor %}</tr>
+          <tr><td>Мест</td>{% for car in cars %}<td>{{ car.seats or '—' }}</td>{% endfor %}</tr>
+          <tr><td></td>{% for car in cars %}<td><a href="{{ car_detail_url(car) }}" class="btn btn-ghost btn-sm">Открыть</a></td>{% endfor %}</tr>
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

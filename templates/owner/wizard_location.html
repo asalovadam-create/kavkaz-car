@@ -1,0 +1,15 @@
+{% extends "owner/_wizard_base.html" %}
+{% block wizard_content %}
+  <h1>Где находится автомобиль?</h1>
+  <p class="wizard-card__hint">Выберите город, в котором клиент сможет забрать машину.</p>
+
+  <div class="field">
+    <label for="city_slug">Город</label>
+    <select id="city_slug" name="city_slug" required>
+      <option value="">Выберите город</option>
+      {% for city in cities %}
+        <option value="{{ city.slug }}" {{ 'selected' if draft.get('city_slug') == city.slug }}>{{ city.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+{% endblock %}

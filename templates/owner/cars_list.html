@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Мои автомобили — KAVKAZ-CAR{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <div class="section-heading" style="margin-top:0;">
+    <h2>Мои автомобили</h2>
+    <a href="{{ url_for('owner.wizard_start') }}" class="btn btn-primary btn-sm">+ Добавить</a>
+  </div>
+
+  {% if cars %}
+    {% for car in cars %}
+      <div class="owner-car-row">
+        {% set photo = car.primary_photo() %}
+        <img src="{{ photo.thumbnail_url if photo else '' }}" alt="">
+        <div class="owner-car-row__body">
+          <div class="owner-car-row__title">{{ car.title() }}</div>
+          <div class="owner-car-row__meta">
+            <span class="status-dot status-{{ car.status }}">{{ car.status }}</span> · {{ format_price(car.price_per_day) }}
+          </div>
+        </div>
+        <div class="owner-car-row__actions">
+          <a href="{{ car_detail_url(car) }}" class="btn btn-ghost btn-sm">Смотреть</a>
+          <a href="{{ url_for('owner.edit_car', public_id=car.public_id) }}" class="btn btn-ghost btn-sm">Изменить</a>
+          <form method="post" action="{{ url_for('owner.boost_car', public_id=car.public_id) }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-ghost btn-sm">Поднять</button>
+          </form>
+          <form method="post" action="{{ url_for('owner.delete_car', public_id=car.public_id) }}" style="display:inline;" onsubmit="return confirm('Удалить автомобиль без возможности восстановления?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <h3>Автомобилей пока нет</h3>
+      <a href="{{ url_for('owner.wizard_start') }}" class="btn btn-primary">Добавить автомобиль</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

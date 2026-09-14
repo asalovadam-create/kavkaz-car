@@ -1,0 +1,11 @@
+{% if cars %}
+  <div class="car-grid">
+    {% for car in cars %}{% include "partials/car_card.html" %}{% endfor %}
+  </div>
+{% else %}
+  <div class="empty-state">
+    <h3>Под эти условия пока ничего не нашлось</h3>
+    <p>Попробуйте увеличить бюджет или посмотреть весь каталог.</p>
+    <a href="{{ url_for('cars.catalog') }}" class="btn btn-ghost">Открыть каталог</a>
+  </div>
+{% endif %}

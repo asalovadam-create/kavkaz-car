@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Редактировать {{ car.title() }} — KAVKAZ-CAR{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:24px; max-width:560px;">
+  <h1 style="font-size:22px;margin-bottom:20px;">{{ car.title() }}</h1>
+
+  <div class="field">
+    <label>Фотографии</label>
+    <div id="photo-preview" class="photo-preview-grid">
+      {% for photo in car.photos %}
+        <div style="position:relative;">
+          <img src="{{ photo.thumbnail_url or photo.url }}" class="{{ 'is-primary' if loop.first }}">
+          <button type="button" class="icon-btn" style="position:absolute;top:4px;right:4px;width:26px;height:26px;background:rgba(0,0,0,0.55);"
+                  data-photo-delete="{{ url_for('owner.delete_photo', public_id=car.public_id, photo_id=photo.id) }}">
+            <svg class="icon" style="width:12px;height:12px;"><use href="#icon-close"></use></svg>
+          </button>
+        </div>
+      {% endfor %}
+    </div>
+    <label for="photo-input" class="photo-drop" style="margin-top:10px;">+ Добавить фото</label>
+    <input id="photo-input" type="file" accept="image/jpeg,image/png,image/webp" multiple
+           style="display:none;" data-photo-upload="{{ url_for('owner.upload_photo', public_id=car.public_id) }}"
+           data-preview-target="photo-preview">
+  </div>
+
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field">
+      <label for="price_per_day">Цена, ₽ / сутки</label>
+      <input id="price_per_day" name="price_per_day" type="number" value="{{ car.price_per_day or '' }}">
+    </div>
+    <div class="field">
+      <label for="description">Описание</label>
+      <textarea id="description" name="description" rows="4">{{ car.description or '' }}</textarea>
+    </div>
+    <div class="toggle-row">
+      <span>С водителем</span>
+      <label class="switch"><input type="checkbox" name="with_driver" value="1" {{ 'checked' if car.with_driver }}><span class="switch__track"></span></label>
+    </div>
+    <div class="toggle-row">
+      <span>Для свадьбы</span>
+      <label class="switch"><input type="checkbox" name="for_wedding" value="1" {{ 'checked' if car.for_wedding }}><span class="switch__track"></span></label>
+    </div>
+    <div class="toggle-row">
+      <span>Доставка</span>
+      <label class="switch"><input type="checkbox" name="delivery_available" value="1" {{ 'checked' if car.delivery_available }}><span class="switch__track"></span></label>
+    </div>
+    <div class="field" style="margin-top:16px;">
+      <label for="status">Статус объявления</label>
+      <select id="status" name="status">
+        <option value="published" {{ 'selected' if car.status == 'published' }}>Опубликовано</option>
+        <option value="paused" {{ 'selected' if car.status == 'paused' }}>Приостановлено</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">Сохранить</button>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('[data-photo-delete]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (!confirm('Удалить фото?')) return;
+      var token = document.querySelector('meta[name="csrf-token"]').content;
+      fetch(btn.getAttribute('data-photo-delete'), {
+        method: 'POST', headers: {'X-CSRF-Token': token},
+      }).then(function () { btn.closest('div').remove(); });
+    });
+  });
+</script>
+{% endblock %}

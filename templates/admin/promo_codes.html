@@ -1,0 +1,26 @@
+{% extends "admin/_base.html" %}
+{% block admin_content %}
+  <form method="post" class="row" style="margin-bottom:20px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <select name="plan" style="background:var(--bg-surface);color:var(--text-primary);border:1px solid var(--border);border-radius:8px;padding:10px;">
+      <option value="pro">PRO</option>
+      <option value="business">BUSINESS</option>
+    </select>
+    <input type="number" name="duration_days" value="30" style="width:90px;background:var(--bg-surface);color:var(--text-primary);border:1px solid var(--border);border-radius:8px;padding:10px;">
+    <button type="submit" class="btn btn-primary btn-sm">Создать промокод</button>
+  </form>
+
+  <table class="data-table">
+    <thead><tr><th>Код</th><th>Тариф</th><th>Дней</th><th>Статус</th></tr></thead>
+    <tbody>
+      {% for code in codes %}
+        <tr>
+          <td><code>{{ code.code }}</code></td>
+          <td>{{ code.plan|upper }}</td>
+          <td>{{ code.duration_days }}</td>
+          <td>{{ 'Использован' if code.is_used else 'Активен' }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
