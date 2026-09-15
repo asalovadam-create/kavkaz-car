@@ -85,7 +85,7 @@
       <svg class="icon"><use href="#icon-heart"></use></svg>Избранное
     </a>
     <a href="{{ url_for('owner.car_list') if current_user else url_for('auth.register') }}" class="bottom-nav__item {{ 'is-active' if request.endpoint and request.endpoint.startswith('owner.') }}">
-      <svg class="icon"><use href="#icon-car"></use></svg>Мои машины
+      <svg class="icon"><use href="#icon-car"></use></svg>Машины
     </a>
     <a href="{{ url_for('owner.profile') if current_user else url_for('auth.login') }}" class="bottom-nav__item">
       <svg class="icon"><use href="#icon-user"></use></svg>Профиль

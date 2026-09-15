@@ -185,8 +185,9 @@ p { margin: 0; }
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 6px 4px;
-  font-size: 11px;
+  padding: 6px 2px;
+  font-size: 10px;
+  white-space: nowrap;
   color: var(--text-tertiary);
   border-radius: var(--radius-sm);
   transition: color var(--dur-micro) var(--ease);
@@ -265,17 +266,17 @@ p { margin: 0; }
 /* ============================== HERO / HOME ============================= */
 
 .hero {
-  padding: 40px 0 28px;
+  padding: 20px 0 20px;
   text-align: center;
 }
 .hero h1 {
-  font-size: 30px;
-  line-height: 1.15;
+  font-size: 22px;
+  line-height: 1.2;
   max-width: 640px;
-  margin: 0 auto 28px;
+  margin: 0 auto 18px;
 }
 @media (min-width: 700px) {
-  .hero h1 { font-size: 42px; }
+  .hero h1 { font-size: 42px; margin-bottom: 28px; }
 }
 
 .search-panel {
@@ -287,7 +288,7 @@ p { margin: 0; }
 }
 .search-panel__grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 2px;
   background: var(--border);
   border-radius: calc(var(--radius-lg) - 6px);
@@ -298,15 +299,15 @@ p { margin: 0; }
 }
 .search-panel__field {
   background: var(--bg-surface-raised);
-  padding: 12px 18px;
+  padding: 10px 14px;
 }
 .search-panel__field label {
   display: block;
-  font-size: 10px;
+  font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-tertiary);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 .search-panel__field select,
 .search-panel__field input {
@@ -314,17 +315,21 @@ p { margin: 0; }
   background: transparent;
   border: none;
   color: var(--text-primary);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   padding: 0;
 }
 .search-panel__field select:focus,
 .search-panel__field input:focus { outline: none; }
 .search-panel__submit {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 14px 18px;
+  padding: 10px;
+}
+@media (min-width: 800px) {
+  .search-panel__submit { grid-column: auto; padding: 14px 18px; }
 }
 .search-panel__submit .btn { white-space: nowrap; }
 
@@ -332,8 +337,10 @@ p { margin: 0; }
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  padding: 18px 20px 4px;
+  padding: 14px 20px 4px;
   scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 24px), transparent);
+  mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 24px), transparent);
 }
 .event-picker::-webkit-scrollbar { display: none; }
 .event-chip {
