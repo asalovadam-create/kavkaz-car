@@ -34,6 +34,8 @@ class User(db.Model):
     phone = db.Column(db.String(20), unique=True, nullable=False, index=True)
     email = db.Column(db.String(255), unique=True, nullable=True)
     password_hash = db.Column(db.String(255), nullable=False)
+    full_name = db.Column(db.String(120), nullable=True)
+    age = db.Column(db.Integer, nullable=True)
     is_blocked = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     last_login_at = db.Column(db.DateTime, nullable=True)
@@ -122,6 +124,7 @@ class Car(db.Model):
 
     price_per_day = db.Column(db.Integer, nullable=True, index=True)  # null = «цена по запросу»
     min_rental_days = db.Column(db.Integer, default=1, nullable=False)
+    min_driver_age = db.Column(db.Integer, default=18, nullable=False)  # владелец может ужесточить (18/21/25)
     with_driver = db.Column(db.Boolean, default=False, nullable=False)
     for_wedding = db.Column(db.Boolean, default=False, nullable=False)
     delivery_available = db.Column(db.Boolean, default=False, nullable=False)

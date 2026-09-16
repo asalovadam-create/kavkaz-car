@@ -15,8 +15,11 @@ def home():
     cities = City.query.filter_by(is_active=True).order_by(City.is_primary.desc(), City.name).all()
     featured = Car.query.filter_by(status="published").all()
     featured.sort(key=sort_key_for_catalog)
+    # На главной не показываем "Свидание" в чипах — остаётся доступным
+    # в форме "Помогите выбрать" как менее публичный, приватный вариант.
+    home_event_types = [(v, l) for v, l in EVENT_TYPES if v != "date"]
     return render_template(
-        "home.html", cities=cities, featured_cars=featured[:12], event_types=EVENT_TYPES,
+        "home.html", cities=cities, featured_cars=featured[:12], event_types=home_event_types,
         body_types=BODY_TYPES,
     )
 

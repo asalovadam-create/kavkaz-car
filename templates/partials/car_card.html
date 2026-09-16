@@ -26,6 +26,20 @@
     <div class="car-card__meta">
       <svg class="icon" style="width:13px;height:13px;"><use href="#icon-location"></use></svg>{{ car.city.name }}
     </div>
-    <a href="{{ car_detail_url(car) }}" class="car-card__cta">Открыть</a>
+    <div class="row" style="margin-top:10px;gap:6px;">
+      <a href="{{ car_detail_url(car) }}" class="car-card__cta" style="flex:1;margin-top:0;">Открыть</a>
+      <a href="{{ url_for('cars.contact_redirect', public_id=car.public_id, channel='call') }}"
+         onclick="event.stopPropagation()" aria-label="Позвонить"
+         style="flex:0 0 auto;width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);background:var(--accent);color:var(--accent-ink);">
+        <svg class="icon" style="width:16px;height:16px;"><use href="#icon-phone"></use></svg>
+      </a>
+      {% if car.whatsapp %}
+        <a href="{{ url_for('cars.contact_redirect', public_id=car.public_id, channel='whatsapp') }}" target="_blank" rel="noopener"
+           onclick="event.stopPropagation()" aria-label="Написать в WhatsApp"
+           style="flex:0 0 auto;width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);border:1px solid var(--border-strong);color:var(--text-primary);">
+          <svg class="icon" style="width:16px;height:16px;"><use href="#icon-message"></use></svg>
+        </a>
+      {% endif %}
+    </div>
   </div>
 </article>

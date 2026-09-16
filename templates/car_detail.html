@@ -55,6 +55,7 @@
   </div>
 
   <div class="trust-row">
+    <span class="trust-chip"><svg><use href="#icon-shield"></use></svg>Водителю от {{ car.min_driver_age }} {{ 'года' if car.min_driver_age in (21,23) else 'лет' }}</span>
     {% if car.owner.owner_profile and car.owner.owner_profile.phone_verified %}
       <span class="trust-chip"><svg><use href="#icon-shield"></use></svg>Телефон подтверждён</span>
     {% endif %}
@@ -94,6 +95,7 @@
       <dt>С водителем</dt><dd>{{ 'Да' if car.with_driver else 'Нет' }}</dd>
       <dt>Для свадьбы</dt><dd>{{ 'Да' if car.for_wedding else 'Нет' }}</dd>
       <dt>Доставка</dt><dd>{{ 'Да' if car.delivery_available else 'Нет' }}</dd>
+      <dt>Мин. возраст водителя</dt><dd>от {{ car.min_driver_age }} {{ 'года' if car.min_driver_age in (21,23) else 'лет' }}</dd>
     </dl>
   </div>
 

@@ -5,39 +5,16 @@
 <section class="hero container">
   <h1>Найди автомобиль<br>для своего момента</h1>
 
-  <form class="search-panel glass" action="{{ url_for('cars.catalog') }}" method="get">
-    <div class="search-panel__grid">
-      <div class="search-panel__field">
-        <label for="s-city">Где</label>
-        <select id="s-city" name="city">
-          <option value="">Любой город</option>
-          {% for city in cities %}
-            <option value="{{ city.slug }}">{{ city.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="search-panel__field">
-        <label for="s-q">Что ищем</label>
-        <input id="s-q" name="q" type="text" placeholder="Mercedes, BMW, любой">
-      </div>
-      <div class="search-panel__field">
-        <label for="s-price">Бюджет</label>
-        <input id="s-price" name="price_max" type="number" placeholder="до 20 000 ₽">
-      </div>
-      <div class="search-panel__field">
-        <label for="s-body">Кузов</label>
-        <select id="s-body" name="body_type">
-          <option value="">Любой</option>
-          {% for value, label in body_types %}
-            <option value="{{ value }}">{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="search-panel__submit">
-        <button type="submit" class="btn btn-primary btn-block">Показать автомобили</button>
-      </div>
-    </div>
+  <form class="compact-search glass" action="{{ url_for('cars.catalog') }}" method="get">
+    <svg class="icon" style="color:var(--text-tertiary);"><use href="#icon-search"></use></svg>
+    <input name="q" type="text" placeholder="Марка, модель или город…">
+    <button type="submit" class="btn btn-primary btn-sm">Найти</button>
   </form>
+  <div class="text-center" style="margin-top:10px;">
+    <a href="{{ url_for('cars.catalog') }}" class="text-muted" style="font-size:13px;">
+      Город, бюджет, кузов и другие фильтры →
+    </a>
+  </div>
 
   <div class="event-picker">
     <span class="text-muted" style="align-self:center; font-size:13px; padding-right:4px;">Для чего нужна машина?</span>
@@ -48,7 +25,7 @@
 </section>
 
 <div class="container">
-  <div class="section-heading">
+  <div class="section-heading" style="margin-top:24px;">
     <h2>Доступно сейчас</h2>
     <a href="{{ url_for('cars.catalog') }}">Смотреть все →</a>
   </div>
@@ -66,6 +43,32 @@
       <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Разместить автомобиль</a>
     </div>
   {% endif %}
+
+  <div class="section-heading">
+    <h2>Почему не просто Instagram?</h2>
+  </div>
+  <div class="value-grid">
+    <div class="value-card">
+      <svg class="icon" style="width:22px;height:22px;color:var(--accent-strong);"><use href="#icon-phone"></use></svg>
+      <h3>Звонок в одно касание</h3>
+      <p>Не нужно писать в директ и ждать ответа часами — телефон и WhatsApp владельца видны сразу в объявлении.</p>
+    </div>
+    <div class="value-card">
+      <svg class="icon" style="width:22px;height:22px;color:var(--accent-strong);"><use href="#icon-scale"></use></svg>
+      <h3>Сравнение в 2 клика</h3>
+      <p>Не нужно листать десятки страниц — цены, города и условия нескольких машин рядом на одном экране.</p>
+    </div>
+    <div class="value-card">
+      <svg class="icon" style="width:22px;height:22px;color:var(--accent-strong);"><use href="#icon-shield"></use></svg>
+      <h3>Условия видны заранее</h3>
+      <p>Минимальный возраст водителя, залог, доставка — до звонка, а не сюрпризом при встрече.</p>
+    </div>
+    <div class="value-card">
+      <svg class="icon" style="width:22px;height:22px;color:var(--accent-strong);"><use href="#icon-warning"></use></svg>
+      <h3>Есть куда пожаловаться</h3>
+      <p>Столкнулись с обманом или чужими фото? В отличие от личной страницы, объявление можно и нужно проверить.</p>
+    </div>
+  </div>
 
   <div id="cities" class="section-heading">
     <h2>Города Северного Кавказа</h2>

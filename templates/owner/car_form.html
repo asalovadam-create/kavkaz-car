@@ -46,6 +46,15 @@
       <span>Доставка</span>
       <label class="switch"><input type="checkbox" name="delivery_available" value="1" {{ 'checked' if car.delivery_available }}><span class="switch__track"></span></label>
     </div>
+    <div class="field">
+      <label for="min_driver_age">Минимальный возраст водителя</label>
+      <select id="min_driver_age" name="min_driver_age">
+        <option value="18" {{ 'selected' if car.min_driver_age == 18 }}>от 18 лет</option>
+        <option value="21" {{ 'selected' if car.min_driver_age == 21 }}>от 21 года</option>
+        <option value="23" {{ 'selected' if car.min_driver_age == 23 }}>от 23 лет</option>
+        <option value="25" {{ 'selected' if car.min_driver_age == 25 }}>от 25 лет</option>
+      </select>
+    </div>
     <div class="field" style="margin-top:16px;">
       <label for="status">Статус объявления</label>
       <select id="status" name="status">

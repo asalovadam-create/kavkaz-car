@@ -44,10 +44,18 @@ def register():
         phone = _normalize_phone(request.form.get("phone", ""))
         password = request.form.get("password", "")
         password_confirm = request.form.get("password_confirm", "")
+        full_name = request.form.get("full_name", "").strip()[:120]
+        age = request.form.get("age", type=int)
 
         error = None
-        if not phone:
+        if not full_name:
+            error = "Введите имя."
+        elif not phone:
             error = "Введите корректный номер телефона."
+        elif age is None or age < 18:
+            error = "Регистрация на KAVKAZ-CAR доступна только с 18 лет."
+        elif age > 100:
+            error = "Проверьте указанный возраст."
         elif len(password) < 8:
             error = "Пароль должен быть не короче 8 символов."
         elif password != password_confirm:
@@ -57,9 +65,12 @@ def register():
 
         if error:
             flash(error, "error")
-            return render_template("auth/register.html", phone=request.form.get("phone", "")), 400
+            return render_template(
+                "auth/register.html", phone=request.form.get("phone", ""),
+                full_name=full_name, age=request.form.get("age", ""),
+            ), 400
 
-        user = User(phone=phone, password_hash=hash_password(password))
+        user = User(phone=phone, password_hash=hash_password(password), full_name=full_name, age=age)
         db.session.add(user)
         db.session.commit()
 

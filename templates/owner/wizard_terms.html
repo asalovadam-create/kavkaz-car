@@ -12,6 +12,16 @@
     <input id="min_rental_days" name="min_rental_days" type="number" min="1" value="{{ draft.get('min_rental_days', 1) }}">
   </div>
   <div class="field">
+    <label for="min_driver_age">Минимальный возраст водителя</label>
+    <select id="min_driver_age" name="min_driver_age">
+      <option value="18" {{ 'selected' if draft.get('min_driver_age', 18) == 18 }}>от 18 лет</option>
+      <option value="21" {{ 'selected' if draft.get('min_driver_age') == 21 }}>от 21 года</option>
+      <option value="23" {{ 'selected' if draft.get('min_driver_age') == 23 }}>от 23 лет</option>
+      <option value="25" {{ 'selected' if draft.get('min_driver_age') == 25 }}>от 25 лет</option>
+    </select>
+    <p class="field-hint">Это ваше требование — клиент увидит его в карточке до звонка.</p>
+  </div>
+  <div class="field">
     <label for="description">Описание</label>
     <textarea id="description" name="description" rows="4" maxlength="2000">{{ draft.get('description','') }}</textarea>
   </div>

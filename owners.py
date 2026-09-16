@@ -120,6 +120,7 @@ def _save_step(step, draft, form):
         draft["delivery_available"] = form.get("delivery_available") == "1"
         draft["transmission_auto"] = form.get("transmission_auto", "1") == "1"
         draft["min_rental_days"] = form.get("min_rental_days", 1, type=int)
+        draft["min_driver_age"] = form.get("min_driver_age", 18, type=int)
         draft["description"] = form.get("description", "").strip()[:2000]
     elif step == "location":
         draft["city_slug"] = form.get("city_slug")
@@ -179,6 +180,7 @@ def _publish_draft(draft):
         transmission_auto=bool(draft.get("transmission_auto", True)),
         price_per_day=draft.get("price_per_day"),
         min_rental_days=draft.get("min_rental_days") or 1,
+        min_driver_age=draft.get("min_driver_age") or 18,
         with_driver=bool(draft.get("with_driver")),
         for_wedding=bool(draft.get("for_wedding")),
         delivery_available=bool(draft.get("delivery_available")),
@@ -228,6 +230,9 @@ def edit_car(public_id):
         car.with_driver = request.form.get("with_driver") == "1"
         car.for_wedding = request.form.get("for_wedding") == "1"
         car.delivery_available = request.form.get("delivery_available") == "1"
+        min_age = request.form.get("min_driver_age", type=int)
+        if min_age and 18 <= min_age <= 60:
+            car.min_driver_age = min_age
         car.status = request.form.get("status") if request.form.get("status") in (
             "published", "paused",
         ) else car.status

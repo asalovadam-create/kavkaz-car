@@ -8,8 +8,17 @@
   <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="field">
+      <label for="full_name">Ваше имя</label>
+      <input id="full_name" name="full_name" type="text" placeholder="Как к вам обращаться" value="{{ full_name|default('') }}" required autofocus>
+    </div>
+    <div class="field">
+      <label for="age">Возраст</label>
+      <input id="age" name="age" type="number" min="18" max="100" placeholder="18" value="{{ age|default('') }}" required>
+      <p class="field-hint">Регистрация на KAVKAZ-CAR доступна только с 18 лет.</p>
+    </div>
+    <div class="field">
       <label for="phone">Телефон</label>
-      <input id="phone" name="phone" type="tel" placeholder="+7 900 000-00-00" value="{{ phone|default('') }}" required autofocus>
+      <input id="phone" name="phone" type="tel" placeholder="+7 900 000-00-00" value="{{ phone|default('') }}" required>
     </div>
     <div class="field">
       <label for="password">Пароль</label>
