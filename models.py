@@ -157,8 +157,15 @@ class Car(db.Model):
         return self.photos[0] if self.photos else None
 
     def is_stale(self) -> bool:
+        """Платные тарифы освобождены от ручного подтверждения — это часть
+        ценности подписки (раздел «маркетинг», по просьбе владельца)."""
+        if self.owner.current_plan() != "free":
+            return False
         from config import LISTING_STALE_AFTER_DAYS
         return datetime.utcnow() - self.last_confirmed_at > timedelta(days=LISTING_STALE_AFTER_DAYS)
+
+    def confirmed_today(self) -> bool:
+        return self.last_confirmed_at.date() == datetime.utcnow().date()
 
     def title(self) -> str:
         parts = [self.brand, self.model]
@@ -253,7 +260,7 @@ class Report(db.Model):
     __tablename__ = "reports"
 
     id = db.Column(db.Integer, primary_key=True)
-    car_id = db.Column(db.Integer, db.ForeignKey("cars.id"), nullable=False, index=True)
+    car_id = db.Column(db.Integer, db.ForeignKey("cars.id", ondelete="CASCADE"), nullable=False, index=True)
     reason = db.Column(db.String(30), nullable=False)
     message = db.Column(db.Text, nullable=True)
     status = db.Column(db.String(20), default="new", nullable=False)  # new|reviewed|actioned|dismissed

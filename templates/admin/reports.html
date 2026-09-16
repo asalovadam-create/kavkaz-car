@@ -9,12 +9,14 @@
           <td>{{ report.reason }}</td>
           <td>{{ report.message or '—' }}</td>
           <td>
-            <form method="post" action="{{ url_for('admin_panel.resolve_report', report_id=report.id) }}" class="row">
+            <form method="post" action="{{ url_for('admin_panel.resolve_report', report_id=report.id) }}" class="row" style="flex-wrap:wrap;">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" name="action" value="hide" class="btn btn-ghost btn-sm">Скрыть</button>
               <button type="submit" name="action" value="block" class="btn btn-danger btn-sm">Заблокировать</button>
               <button type="submit" name="action" value="restore" class="btn btn-ghost btn-sm">Восстановить</button>
               <button type="submit" name="action" value="dismiss" class="btn btn-ghost btn-sm">Отклонить</button>
+              <button type="submit" name="action" value="delete" class="btn btn-danger btn-sm"
+                      onclick="return confirm('Удалить объявление навсегда? Отменить нельзя.');">Удалить навсегда</button>
             </form>
           </td>
         </tr>

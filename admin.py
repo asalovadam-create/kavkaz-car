@@ -12,7 +12,7 @@ from flask import Blueprint, flash, redirect, render_template, request, session,
 from config import PLAN_ORDER
 from models import AdminLog, Car, PromoCode, Report, Subscription, User, db
 from security import admin_required
-from services import generate_promo_code
+from services import generate_promo_code, get_image_storage
 
 admin_bp = Blueprint("admin_panel", __name__, url_prefix="/admin")
 
@@ -87,6 +87,30 @@ def set_car_status(car_id):
     return redirect(url_for("admin_panel.cars"))
 
 
+def _delete_car_completely(car: Car) -> str:
+    """Полное удаление объявления вместе с фотографиями в хранилище.
+    Возвращает название автомобиля для логов/сообщений (после удаления
+    объекта из сессии обращаться к car.title() уже нельзя)."""
+    title = car.title()
+    storage = get_image_storage()
+    for photo in car.photos:
+        if photo.storage_public_id:
+            storage.delete(photo.storage_public_id)
+    db.session.delete(car)
+    return title
+
+
+@admin_bp.route("/cars/<int:car_id>/delete", methods=["POST"])
+@admin_required
+def delete_car(car_id):
+    car = Car.query.get_or_404(car_id)
+    title = _delete_car_completely(car)
+    _log_action(f"delete_car:{title}", "car", car_id)
+    db.session.commit()
+    flash("Объявление удалено безвозвратно.", "success")
+    return redirect(url_for("admin_panel.cars"))
+
+
 @admin_bp.route("/reports")
 @admin_required
 def reports():
@@ -102,7 +126,16 @@ def reports():
 @admin_required
 def resolve_report(report_id):
     report = Report.query.get_or_404(report_id)
-    action = request.form.get("action")  # hide|block|restore|dismiss
+    action = request.form.get("action")  # hide|block|restore|dismiss|delete
+
+    if action == "delete" and report.car:
+        # Удаление автомобиля каскадно удалит и саму жалобу на уровне БД —
+        # поэтому лог пишем ДО удаления и больше не трогаем объект report.
+        title = _delete_car_completely(report.car)
+        _log_action(f"delete_car_via_report:{title}", "car", report.car_id)
+        db.session.commit()
+        flash("Объявление удалено, жалоба закрыта.", "success")
+        return redirect(url_for("admin_panel.reports"))
 
     if action == "hide" and report.car:
         report.car.status = "paused"
