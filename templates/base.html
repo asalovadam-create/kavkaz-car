@@ -27,7 +27,13 @@
         <a href="{{ url_for('cars.help_me_choose') }}">Помогите выбрать</a>
         <a href="{{ url_for('main.home') }}#cities">Города</a>
         {% if current_user %}<a href="{{ url_for('owner.subscription') }}">Тарифы</a>{% endif %}
-        {% if current_user %}<a href="{{ url_for('owner.dashboard') }}">Разместить авто</a>{% else %}<a href="{{ url_for('auth.register') }}">Разместить авто</a>{% endif %}
+        {% if current_user and current_user.is_owner %}
+          <a href="{{ url_for('owner.dashboard') }}">Разместить авто</a>
+        {% elif current_user %}
+          <a href="{{ url_for('owner.profile') }}">Стать владельцом</a>
+        {% else %}
+          <a href="{{ url_for('auth.register') }}">Разместить авто</a>
+        {% endif %}
       </nav>
 
       <div class="nav-actions">
@@ -65,7 +71,7 @@
         <a href="{{ url_for('main.terms') }}">Пользовательское соглашение</a>
         <a href="{{ url_for('main.privacy') }}">Политика конфиденциальности</a>
         <a href="{{ url_for('main.listing_rules') }}">Правила размещения</a>
-        <a href="{{ url_for('owner.dashboard') if current_user else url_for('auth.register') }}">Я сдаю автомобиль</a>
+        <a href="{{ url_for('owner.profile') if current_user else url_for('auth.register') }}">Я сдаю автомобиль</a>
       </div>
       <p class="site-footer__disclaimer">
         KAVKAZ-CAR предоставляет информационную платформу для поиска предложений аренды автомобилей.
@@ -85,8 +91,8 @@
     <a href="{{ url_for('cars.favorites') if current_user else url_for('auth.login') }}" class="bottom-nav__item {{ 'is-active' if request.endpoint == 'cars.favorites' }}">
       <svg class="icon"><use href="#icon-heart"></use></svg>Избранное
     </a>
-    <a href="{{ url_for('owner.car_list') if current_user else url_for('auth.register') }}" class="bottom-nav__item {{ 'is-active' if request.endpoint and request.endpoint.startswith('owner.') }}">
-      <svg class="icon"><use href="#icon-car"></use></svg>Машины
+    <a href="{{ url_for('owner.car_list') if (current_user and current_user.is_owner) else (url_for('owner.profile') if current_user else url_for('auth.register')) }}" class="bottom-nav__item {{ 'is-active' if request.endpoint and request.endpoint.startswith('owner.') }}">
+      <svg class="icon"><use href="#icon-car"></use></svg>{{ 'Машины' if (current_user and current_user.is_owner) else 'Владелец' }}
     </a>
     <a href="{{ url_for('owner.profile') if current_user else url_for('auth.login') }}" class="bottom-nav__item">
       <svg class="icon"><use href="#icon-user"></use></svg>Профиль

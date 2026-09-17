@@ -15,7 +15,7 @@ from flask import (
 
 from config import BODY_TYPES, CAR_BRANDS, LISTING_STALE_AFTER_DAYS
 from models import Car, CarPhoto, City, ContactClick, OwnerProfile, PromoCode, User, View, db
-from security import InvalidImageError, login_required, rate_limit, validate_and_load_image
+from security import InvalidImageError, login_required, owner_mode_required, rate_limit, validate_and_load_image
 from services import (
     boosts_remaining, can_add_car, can_add_photo, optimize_image,
     plan_limits, redeem_promo_code, get_image_storage,
@@ -42,6 +42,7 @@ def _ensure_profile(user: User) -> OwnerProfile:
 
 @owner_bp.route("/dashboard")
 @login_required
+@owner_mode_required
 def dashboard():
     user = g.current_user
     _ensure_profile(user)
@@ -63,6 +64,7 @@ def dashboard():
 
 @owner_bp.route("/cars")
 @login_required
+@owner_mode_required
 def car_list():
     cars = Car.query.filter_by(owner_id=g.current_user.id).order_by(Car.created_at.desc()).all()
     return render_template("owner/cars_list.html", cars=cars)
@@ -74,6 +76,7 @@ def car_list():
 
 @owner_bp.route("/cars/new")
 @login_required
+@owner_mode_required
 def wizard_start():
     if not can_add_car(g.current_user):
         flash("Вы достигли лимита автомобилей на вашем тарифе.", "error")
@@ -84,6 +87,7 @@ def wizard_start():
 
 @owner_bp.route("/cars/new/<step>", methods=["GET", "POST"])
 @login_required
+@owner_mode_required
 def wizard_step(step):
     if step not in WIZARD_STEPS:
         return redirect(url_for("owner.wizard_start"))
@@ -134,6 +138,7 @@ def _save_step(step, draft, form):
 
 @owner_bp.route("/cars/new/photos/upload", methods=["POST"])
 @login_required
+@owner_mode_required
 @rate_limit("upload")
 def wizard_upload_photo():
     """Фото при создании грузятся сразу, но привязываются к draft-списку
@@ -221,6 +226,7 @@ def _owned_car_or_404(public_id):
 
 @owner_bp.route("/cars/<public_id>/edit", methods=["GET", "POST"])
 @login_required
+@owner_mode_required
 def edit_car(public_id):
     car = _owned_car_or_404(public_id)
     cities = City.query.filter_by(is_active=True).order_by(City.name).all()
@@ -246,6 +252,7 @@ def edit_car(public_id):
 
 @owner_bp.route("/cars/<public_id>/delete", methods=["POST"])
 @login_required
+@owner_mode_required
 def delete_car(public_id):
     car = _owned_car_or_404(public_id)
     storage = get_image_storage()
@@ -260,6 +267,7 @@ def delete_car(public_id):
 
 @owner_bp.route("/cars/<public_id>/confirm-actual", methods=["POST"])
 @login_required
+@owner_mode_required
 def confirm_actual(public_id):
     car = _owned_car_or_404(public_id)
     car.last_confirmed_at = datetime.utcnow()
@@ -269,6 +277,7 @@ def confirm_actual(public_id):
 
 @owner_bp.route("/cars/<public_id>/boost", methods=["POST"])
 @login_required
+@owner_mode_required
 def boost_car(public_id):
     car = _owned_car_or_404(public_id)
     if boosts_remaining(g.current_user) <= 0:
@@ -286,6 +295,7 @@ def boost_car(public_id):
 
 @owner_bp.route("/cars/<public_id>/photos/<int:photo_id>/delete", methods=["POST"])
 @login_required
+@owner_mode_required
 def delete_photo(public_id, photo_id):
     car = _owned_car_or_404(public_id)
     photo = CarPhoto.query.filter_by(id=photo_id, car_id=car.id).first_or_404()
@@ -299,6 +309,7 @@ def delete_photo(public_id, photo_id):
 
 @owner_bp.route("/cars/<public_id>/photos/upload", methods=["POST"])
 @login_required
+@owner_mode_required
 @rate_limit("upload")
 def upload_photo(public_id):
     car = _owned_car_or_404(public_id)

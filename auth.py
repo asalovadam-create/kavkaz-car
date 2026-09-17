@@ -78,7 +78,7 @@ def register():
         session.permanent = True
         session["user_id"] = user.id
         flash("Добро пожаловать! Теперь вы можете разместить автомобиль.", "success")
-        return redirect(request.args.get("next") or url_for("owner.dashboard"))
+        return redirect(request.args.get("next") or url_for("owner.profile"))
 
     return render_template("auth/register.html")
 
@@ -106,7 +106,7 @@ def login():
         db.session.commit()
 
         next_url = request.args.get("next")
-        return redirect(next_url or url_for("owner.dashboard"))
+        return redirect(next_url or url_for("owner.profile"))
 
     return render_template("auth/login.html")
 

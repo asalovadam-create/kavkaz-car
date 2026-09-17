@@ -259,13 +259,61 @@ def best_value_score(car) -> float:
     return score
 
 
+def notify_admin_telegram(message: str) -> None:
+    """Необязательное уведомление админу о новых жалобах.
+
+    Не настроено по умолчанию — если TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID не
+    заданы, функция тихо ничего не делает. Ошибка отправки не должна ронять
+    основной запрос пользователя (жалоба), поэтому исключения гасятся здесь.
+    """
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    if not token or not chat_id:
+        return
+    try:
+        import requests
+        requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            json={"chat_id": chat_id, "text": message},
+            timeout=5,
+        )
+    except Exception:
+        pass
+
+
 def sort_key_for_catalog(car):
-    """Ключ сортировки каталога: сначала буст, затем приоритет тарифа,
-    затем best-value скор, затем свежесть."""
+    """Ключ сортировки каталога.
+
+    Проблема, которую нужно было решить: если поднятие просто ставит
+    объявление в топ на 48 часов, а поднять могут МНОГИЕ владельцы
+    одновременно (даже с лимитом 1-4 раза в месяц, в базе из сотен
+    объявлений таких «поднятых» может оказаться сразу десяток) — топ
+    превращается в такой же нечитаемый список, каким был бы без поднятия
+    вообще, и ценность подписки исчезает.
+
+    Решение: среди ОДНОВРЕМЕННО поднятых объявлений порядок каждый час
+    честно перемешивается (детерминированно, без случайности между
+    запросами в течение одного часа — иначе список бы «прыгал» при
+    каждом обновлении страницы). Это значит: если поднято 10 объявлений,
+    каждое получает примерно равную долю показов в самом топе за 48 часов,
+    а не «кто раньше поднял — тот и главный», и не «у кого дороже тариф —
+    тот и главный». Естественный ограничитель — лимит поднятий по тарифу
+    (0 / 1 / 4 в месяц), его можно уменьшить в PLANS, если поднятий станет
+    слишком много.
+    """
     boosted = 1 if (car.is_boosted_until and car.is_boosted_until > datetime.utcnow()) else 0
     plan = car.owner.current_plan()
+
+    rotation_key = 0
+    if boosted:
+        import hashlib
+        current_hour_bucket = datetime.utcnow().strftime("%Y%m%d%H")
+        digest = hashlib.md5(f"{car.id}-{current_hour_bucket}".encode()).hexdigest()
+        rotation_key = int(digest, 16) % 1000  # честная ротация внутри топа
+
     return (
         -boosted,
+        rotation_key,
         -plan_limits(plan)["priority"],
         -best_value_score(car),
         -car.created_at.timestamp(),

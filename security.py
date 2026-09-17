@@ -131,6 +131,13 @@ def apply_security_headers(response):
         response.headers.setdefault(
             "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
         )
+    # Страницы сайта показывают разное содержимое в зависимости от того, кто
+    # и с каким статусом вошёл (владелец/гость, включён ли режим владельца).
+    # Запрещаем браузеру показывать закешированную версию такой страницы —
+    # иначе после переключения режима или входа/выхода видна устаревшая
+    # картинка, будто изменения не сохранились.
+    if response.mimetype == "text/html":
+        response.headers["Cache-Control"] = "no-store"
     return response
 
 
@@ -192,6 +199,22 @@ def login_required(view_func):
         if not session.get("user_id"):
             from flask import redirect, url_for
             return redirect(url_for("auth.login", next=request.path))
+        return view_func(*args, **kwargs)
+
+    return wrapped
+
+
+def owner_mode_required(view_func):
+    """Доступ к размещению/управлению автомобилями — только после того, как
+    пользователь сам включил переключатель «Я владелец» в профиле.
+    Применяется ПОСЛЕ @login_required."""
+
+    @wraps(view_func)
+    def wrapped(*args, **kwargs):
+        if not g.current_user or not g.current_user.is_owner:
+            from flask import flash, redirect, url_for
+            flash("Сначала включите режим владельца в профиле.", "error")
+            return redirect(url_for("owner.profile"))
         return view_func(*args, **kwargs)
 
     return wrapped
