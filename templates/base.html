@@ -26,6 +26,7 @@
         <a href="{{ url_for('cars.catalog') }}">Каталог</a>
         <a href="{{ url_for('cars.help_me_choose') }}">Помогите выбрать</a>
         <a href="{{ url_for('main.home') }}#cities">Города</a>
+        {% if current_user %}<a href="{{ url_for('owner.subscription') }}">Тарифы</a>{% endif %}
         {% if current_user %}<a href="{{ url_for('owner.dashboard') }}">Разместить авто</a>{% else %}<a href="{{ url_for('auth.register') }}">Разместить авто</a>{% endif %}
       </nav>
 
@@ -34,7 +35,7 @@
           <svg class="icon"><use href="#icon-heart"></use></svg>
         </a>
         {% if current_user %}
-          <a href="{{ url_for('owner.dashboard') }}" class="icon-btn" aria-label="Личный кабинет">
+          <a href="{{ url_for('owner.profile') }}" class="icon-btn header-profile-btn" aria-label="Профиль">
             <svg class="icon"><use href="#icon-user"></use></svg>
           </a>
         {% else %}

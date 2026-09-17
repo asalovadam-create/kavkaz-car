@@ -36,6 +36,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     full_name = db.Column(db.String(120), nullable=True)
     age = db.Column(db.Integer, nullable=True)
+    is_owner = db.Column(db.Boolean, default=False, nullable=False)  # включил режим «сдаю авто» в профиле
     is_blocked = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     last_login_at = db.Column(db.DateTime, nullable=True)

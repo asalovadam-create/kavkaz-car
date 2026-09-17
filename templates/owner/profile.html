@@ -1,37 +1,85 @@
 {% extends "base.html" %}
-{% block title %}Профиль владельца — KAVKAZ-CAR{% endblock %}
+{% block title %}Профиль — KAVKAZ-CAR{% endblock %}
 
 {% block content %}
 <div class="container" style="padding-top:24px; max-width:520px;">
   <h1 style="font-size:22px;margin-bottom:20px;">Профиль</h1>
 
-  <form method="post">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="field">
-      <label for="display_name">Имя / название</label>
-      <input id="display_name" name="display_name" value="{{ profile.display_name }}" required>
+  <div class="stat-card" style="margin-bottom:24px;">
+    <div class="row" style="justify-content:space-between;">
+      <span class="text-muted" style="font-size:13px;">{{ current_user.phone }}</span>
+      <span class="badge {{ 'badge-pro' if plan == 'pro' else ('badge-business' if plan == 'business' else '') }}">{{ plan_info.name }}</span>
     </div>
-    {% if plan == 'business' %}
-      <div class="field">
-        <label for="company_name">Название проката</label>
-        <input id="company_name" name="company_name" value="{{ profile.company_name or '' }}">
+  </div>
+
+  <div class="info-block" style="border-top:none;padding-top:0;">
+    <h3>Режим владельца</h3>
+    <p class="text-muted" style="margin-bottom:14px;">
+      Включите, если хотите сдавать свои автомобили в аренду через KAVKAZ-CAR.
+    </p>
+    <form method="post" action="{{ url_for('owner.toggle_owner_mode') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="toggle-row" style="border-bottom:none;">
+        <span>Я владелец — сдаю свои автомобили</span>
+        <label class="switch">
+          <input type="checkbox" onchange="this.form.requestSubmit()" {{ 'checked' if current_user.is_owner }}>
+          <span class="switch__track"></span>
+        </label>
       </div>
+    </form>
+
+    {% if current_user.is_owner %}
+      <a href="{{ url_for('owner.dashboard') }}" class="btn btn-primary btn-block" style="margin-top:14px;">
+        Разместить автомобиль
+      </a>
     {% endif %}
-    <div class="field">
-      <label for="description">Описание</label>
-      <textarea id="description" name="description" rows="4">{{ profile.description or '' }}</textarea>
-    </div>
-    <div class="field">
-      <label for="work_hours">График работы</label>
-      <input id="work_hours" name="work_hours" placeholder="Например, ежедневно с 9:00 до 21:00" value="{{ profile.work_hours or '' }}">
-    </div>
-    <button type="submit" class="btn btn-primary btn-block">Сохранить</button>
-  </form>
+  </div>
+
+  <div class="info-block">
+    <h3>Имя и данные</h3>
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field">
+        <label for="full_name">Имя или название компании</label>
+        <input id="full_name" name="full_name" value="{{ profile.display_name }}" required>
+        <p class="field-hint">Это увидят клиенты в ваших объявлениях.</p>
+      </div>
+      {% if plan == 'business' %}
+        <div class="field">
+          <label for="company_name">Название проката (для бизнес-страницы)</label>
+          <input id="company_name" name="company_name" value="{{ profile.company_name or '' }}">
+        </div>
+      {% endif %}
+      <div class="field">
+        <label for="description">Описание</label>
+        <textarea id="description" name="description" rows="4">{{ profile.description or '' }}</textarea>
+      </div>
+      <div class="field">
+        <label for="work_hours">График работы</label>
+        <input id="work_hours" name="work_hours" placeholder="Например, ежедневно с 9:00 до 21:00" value="{{ profile.work_hours or '' }}">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Сохранить</button>
+    </form>
+  </div>
 
   <div class="info-block">
     <h3>Доверие</h3>
     <p class="text-muted">Профиль заполнен на {{ profile.profile_completion_percent() }}%.
     {% if not profile.phone_verified %}Телефон ещё не подтверждён.{% else %}Телефон подтверждён.{% endif %}</p>
+  </div>
+
+  <div class="info-block">
+    <h3>Тариф</h3>
+    <p class="text-muted" style="margin-bottom:12px;">Текущий тариф: {{ plan_info.name }}.</p>
+    <a href="{{ url_for('owner.subscription') }}" class="btn btn-ghost btn-block">Тарифы и подписка</a>
+  </div>
+
+  <div class="info-block">
+    <h3>Аккаунт</h3>
+    <form method="post" action="{{ url_for('auth.logout') }}" onsubmit="return confirm('Выйти из аккаунта?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-danger btn-block">Выйти из аккаунта</button>
+    </form>
   </div>
 </div>
 {% endblock %}

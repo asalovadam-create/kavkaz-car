@@ -33,7 +33,8 @@ def _draft() -> dict:
 
 def _ensure_profile(user: User) -> OwnerProfile:
     if not user.owner_profile:
-        profile = OwnerProfile(user_id=user.id, display_name=f"Владелец {user.phone[-4:]}")
+        default_name = user.full_name or f"Владелец {user.phone[-4:]}"
+        profile = OwnerProfile(user_id=user.id, display_name=default_name)
         db.session.add(profile)
         db.session.commit()
     return user.owner_profile
@@ -335,14 +336,32 @@ def upload_photo(public_id):
 def profile():
     owner_profile = _ensure_profile(g.current_user)
     if request.method == "POST":
-        owner_profile.display_name = request.form.get("display_name", "").strip()[:120]
+        full_name = request.form.get("full_name", "").strip()[:120]
+        if full_name:
+            g.current_user.full_name = full_name
+            owner_profile.display_name = full_name  # держим синхронно — это одно и то же имя
         owner_profile.description = request.form.get("description", "").strip()[:1500]
         owner_profile.work_hours = request.form.get("work_hours", "").strip()[:200]
         if plan_limits(g.current_user.current_plan())["business_page"]:
             owner_profile.company_name = request.form.get("company_name", "").strip()[:150]
         db.session.commit()
         flash("Профиль обновлён.", "success")
-    return render_template("owner/profile.html", profile=owner_profile, plan=g.current_user.current_plan())
+    return render_template(
+        "owner/profile.html", profile=owner_profile, plan=g.current_user.current_plan(),
+        plan_info=plan_limits(g.current_user.current_plan()),
+    )
+
+
+@owner_bp.route("/profile/toggle-owner", methods=["POST"])
+@login_required
+def toggle_owner_mode():
+    g.current_user.is_owner = not g.current_user.is_owner
+    db.session.commit()
+    if g.current_user.is_owner:
+        flash("Режим владельца включён — теперь можно размещать автомобили.", "success")
+    else:
+        flash("Режим владельца выключен.", "success")
+    return redirect(url_for("owner.profile"))
 
 
 # ---------------------------------------------------------------------------

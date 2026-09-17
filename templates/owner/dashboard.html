@@ -23,6 +23,7 @@
       <div class="stat-card__label">Тариф</div>
       <div class="stat-card__value">{{ plan_info.name }}</div>
       <div class="stat-card__sub">{% if subscription and subscription.expires_at %}до {{ subscription.expires_at.strftime('%d.%m.%Y') }}{% else %}бессрочно{% endif %}</div>
+      <a href="{{ url_for('owner.subscription') }}" class="text-muted" style="font-size:12px;display:inline-block;margin-top:8px;">Сменить тариф →</a>
     </div>
   </div>
 
@@ -44,7 +45,13 @@
           </div>
         </div>
         <div class="owner-car-row__actions">
-          <button type="button" class="btn btn-ghost btn-sm" data-confirm-actual="{{ url_for('owner.confirm_actual', public_id=car.public_id) }}">Подтвердить актуальность</button>
+          {% if car.owner.current_plan() != 'free' %}
+            <span class="badge" style="background:rgba(89,183,131,0.15);color:var(--success);">{{ plans[car.owner.current_plan()].name }} — авто-подтверждение</span>
+          {% elif car.confirmed_today() %}
+            <span class="badge" style="background:rgba(89,183,131,0.15);color:var(--success);">✓ Подтверждено сегодня</span>
+          {% else %}
+            <button type="button" class="btn btn-ghost btn-sm" data-confirm-actual="{{ url_for('owner.confirm_actual', public_id=car.public_id) }}">Подтвердить актуальность</button>
+          {% endif %}
           <a href="{{ url_for('owner.edit_car', public_id=car.public_id) }}" class="btn btn-ghost btn-sm">Редактировать</a>
         </div>
       </div>
