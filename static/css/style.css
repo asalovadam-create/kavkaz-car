@@ -508,9 +508,11 @@ p { margin: 0; }
   letter-spacing: 0.05em;
   padding: 4px 8px;
   border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
 }
-.badge-pro { background: rgba(201, 138, 62, 0.15); color: var(--accent-strong); }
-.badge-business { background: rgba(199, 202, 208, 0.15); color: var(--silver); }
+.badge-pro { background: rgba(201, 138, 62, 0.16); color: var(--accent-strong); }
+.badge-business { background: rgba(232, 185, 64, 0.18); color: #e8b940; }
 .badge-verified { background: rgba(89, 183, 131, 0.12); color: var(--success); }
 
 /* ============================== SKELETONS =============================== */

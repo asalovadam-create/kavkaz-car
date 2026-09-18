@@ -32,7 +32,7 @@
       <div class="car-card__meta">
         <svg class="icon" style="width:14px;height:14px;"><use href="#icon-location"></use></svg>{{ car.city.name }}
         {% if car.owner.owner_profile and car.owner.owner_profile.company_name %}
-          · <span class="badge badge-business">{{ car.owner.current_plan()|upper }}</span>
+          · <span class="badge {{ 'badge-pro' if car.owner.current_plan() == 'pro' else ('badge-business' if car.owner.current_plan() == 'business' else '') }}">{{ plans[car.owner.current_plan()].name }}</span>
         {% endif %}
       </div>
     </div>
