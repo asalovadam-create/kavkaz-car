@@ -1,15 +1,33 @@
 {% extends "base.html" %}
-{% block title %}Регистрация владельца — KAVKAZ-CAR{% endblock %}
+{% block title %}Регистрация — KAVKAZ-CAR{% endblock %}
 
 {% block content %}
 <div class="container" style="padding-top:40px; max-width:420px;">
-  <h1 style="font-size:24px;margin-bottom:6px;">Я сдаю автомобиль</h1>
-  <p class="text-muted" style="margin-bottom:24px;">Регистрация занимает меньше минуты.</p>
+  <h1 style="font-size:24px;margin-bottom:6px;">Регистрация</h1>
+  <p class="text-muted" style="margin-bottom:24px;">Занимает меньше минуты.</p>
   <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
     <div class="field">
-      <label for="full_name">Ваше имя</label>
-      <input id="full_name" name="full_name" type="text" placeholder="Как к вам обращаться" value="{{ full_name|default('') }}" required autofocus>
+      <label>Вы...</label>
+      <div class="role-picker">
+        <label class="role-card">
+          <input type="radio" name="role" value="client" {{ 'checked' if role != 'owner' }}>
+          <span class="role-card__title">Ищу автомобиль</span>
+          <span class="role-card__desc">Хочу арендовать машину</span>
+        </label>
+        <label class="role-card">
+          <input type="radio" name="role" value="owner" {{ 'checked' if role == 'owner' }}>
+          <span class="role-card__title">Сдаю свои автомобили</span>
+          <span class="role-card__desc">Хочу разместить объявление</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="full_name">Имя или название компании</label>
+      <input id="full_name" name="full_name" type="text" placeholder="Например: Ахмад, или «Кавказ Прокат»" value="{{ full_name|default('') }}" required autofocus>
+      <p class="field-hint">Владельцам: именно это увидит клиент в вашем объявлении.</p>
     </div>
     <div class="field">
       <label for="age">Возраст</label>

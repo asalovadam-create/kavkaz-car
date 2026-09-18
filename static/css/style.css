@@ -254,6 +254,29 @@ p { margin: 0; }
   border-color: var(--accent);
 }
 .field-hint { font-size: 12px; color: var(--text-tertiary); margin-top: 6px; }
+
+/* Выбор роли при регистрации: клиент / владелец */
+.role-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.role-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
+}
+.role-card input { position: absolute; opacity: 0; width: 0; height: 0; }
+.role-card__title { font-weight: 700; font-size: 14px; }
+.role-card__desc { font-size: 12px; color: var(--text-secondary); }
+.role-card:has(input:checked) { border-color: var(--accent); background: var(--glass); }
+.role-card:has(input:checked) .role-card__title { color: var(--accent-strong); }
 .checkbox-row { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-secondary); }
 .checkbox-row input { width: 18px; height: 18px; accent-color: var(--accent); }
 

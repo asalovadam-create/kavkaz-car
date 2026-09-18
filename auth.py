@@ -46,6 +46,8 @@ def register():
         password_confirm = request.form.get("password_confirm", "")
         full_name = request.form.get("full_name", "").strip()[:120]
         age = request.form.get("age", type=int)
+        role = request.form.get("role")
+        is_owner = role == "owner"  # по умолчанию, если ничего не пришло — считаем клиентом
 
         error = None
         if not full_name:
@@ -67,18 +69,26 @@ def register():
             flash(error, "error")
             return render_template(
                 "auth/register.html", phone=request.form.get("phone", ""),
-                full_name=full_name, age=request.form.get("age", ""),
+                full_name=full_name, age=request.form.get("age", ""), role=role,
             ), 400
 
-        user = User(phone=phone, password_hash=hash_password(password), full_name=full_name, age=age)
+        user = User(
+            phone=phone, password_hash=hash_password(password), full_name=full_name,
+            age=age, is_owner=is_owner,
+        )
         db.session.add(user)
         db.session.commit()
 
         session.clear()
         session.permanent = True
         session["user_id"] = user.id
-        flash("Добро пожаловать! Теперь вы можете разместить автомобиль.", "success")
-        return redirect(request.args.get("next") or url_for("owner.profile"))
+
+        if is_owner:
+            flash("Добро пожаловать! Разместим ваш первый автомобиль.", "success")
+            return redirect(url_for("owner.wizard_start"))
+
+        flash("Добро пожаловать на KAVKAZ-CAR!", "success")
+        return redirect(request.args.get("next") or url_for("cars.catalog"))
 
     return render_template("auth/register.html")
 
