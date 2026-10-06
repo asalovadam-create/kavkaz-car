@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Сравнение автомобилей — KAVKAZ-CAR{% endblock %}
+{% block robots %}noindex, follow{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <h1 class="page-title">Сравнение</h1>
+
+  {% if cars|length < 2 %}
+    <div class="empty-state">
+      <h3>Выберите хотя бы 2 автомобиля</h3>
+      <p>Нажмите значок весов на карточках в каталоге — они появятся здесь рядом друг с другом.</p>
+      <a href="{{ url_for('cars.catalog') }}" class="btn btn-primary">Перейти в каталог</a>
+    </div>
+  {% else %}
+    <div class="table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr><th></th>{% for car in cars %}<th>{{ car.brand }} {{ car.model }}</th>{% endfor %}</tr>
+        </thead>
+        <tbody>
+          <tr><td>Фото</td>
+            {% for car in cars %}{% set p = car.primary_photo() %}<td>{% if p %}<img src="{{ p.thumbnail_url or p.url }}" alt="{{ car.title() }}" style="width:100%;border-radius:8px;">{% endif %}</td>{% endfor %}
+          </tr>
+          <tr><td>Цена в сутки</td>{% for car in cars %}<td><strong>{{ format_price(car.price_per_day) }}</strong></td>{% endfor %}</tr>
+          <tr><td>Город</td>{% for car in cars %}<td>{{ car.city.name }}</td>{% endfor %}</tr>
+          <tr><td>Год</td>{% for car in cars %}<td>{{ car.year or '—' }}</td>{% endfor %}</tr>
+          <tr><td>Коробка</td>{% for car in cars %}<td>{{ 'Автомат' if car.transmission_auto else 'Механика' }}</td>{% endfor %}</tr>
+          <tr><td>Мест</td>{% for car in cars %}<td>{{ car.seats or '—' }}</td>{% endfor %}</tr>
+          <tr><td>Водитель</td>{% for car in cars %}<td>{{ 'Есть' if car.with_driver else '—' }}</td>{% endfor %}</tr>
+          <tr><td>Для свадьбы</td>{% for car in cars %}<td>{{ '✓' if car.for_wedding else '—' }}</td>{% endfor %}</tr>
+          <tr><td>Доставка</td>{% for car in cars %}<td>{{ '✓' if car.delivery_available else '—' }}</td>{% endfor %}</tr>
+          <tr><td>Возраст водителя</td>{% for car in cars %}<td>от {{ car.min_driver_age }}</td>{% endfor %}</tr>
+          <tr><td></td>{% for car in cars %}<td><a href="{{ car_detail_url(car) }}" class="btn btn-primary btn-sm">Открыть</a></td>{% endfor %}</tr>
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

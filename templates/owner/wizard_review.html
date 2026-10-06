@@ -1,0 +1,26 @@
+{% extends "owner/_wizard_base.html" %}
+{% block wizard_content %}
+<h1>Проверьте и опубликуйте</h1>
+<p class="wizard-card__hint">После публикации автомобиль сразу появится в каталоге. Править объявление можно в любой момент.</p>
+
+{% if problems %}
+  <ul class="problem-list">
+    {% for p in problems %}<li class="alert alert-error">{{ p }}</li>{% endfor %}
+  </ul>
+  {% if problem_step %}<a class="btn btn-ghost btn-block" href="{{ url_for('owner.wizard_step', step=problem_step) }}" style="margin-bottom:16px;">Исправить</a>{% endif %}
+{% endif %}
+
+<div class="card">
+  {% set photos = draft.get('photos', []) %}
+  {% if photos %}<img src="{{ photos[0].url }}" alt="" style="width:100%;border-radius:10px;margin-bottom:14px;aspect-ratio:4/3;object-fit:cover;">{% endif %}
+  <h3 style="font-size:18px;">{{ draft.get('brand') }} {{ draft.get('model') }}{% if draft.get('year') %} · {{ draft.get('year') }}{% endif %}</h3>
+  <p class="car-card__price" style="margin:6px 0;">{% if draft.get('price_per_day') %}{{ format_price(draft.get('price_per_day')) }} <span>/ сутки</span>{% else %}Цена по запросу{% endif %}</p>
+  <dl class="spec-grid" style="margin-top:12px;">
+    <dt>Город</dt><dd>{{ city.name if city else '—' }}</dd>
+    <dt>Фото</dt><dd>{{ photos|length }}</dd>
+    <dt>Телефон</dt><dd>{{ (draft.get('phone') or '—') | phone_fmt }}</dd>
+    <dt>Коробка</dt><dd>{{ 'Автомат' if draft.get('transmission_auto') else 'Механика' }}</dd>
+    <dt>Возраст водителя</dt><dd>от {{ draft.get('min_driver_age') or 18 }}</dd>
+  </dl>
+</div>
+{% endblock %}

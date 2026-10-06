@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Тариф и подписка — KAVKAZ-CAR{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<div class="page-narrow">
+  <h1 class="page-title">Тариф и подписка</h1>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+      <div>
+        <p class="muted-sm">Текущий тариф</p>
+        <p style="font-size:26px;font-weight:800;">{{ plan|upper }}</p>
+      </div>
+      {% if plan != 'free' %}<span class="badge {{ 'badge-business' if plan == 'business' else 'badge-pro' }}">{{ plan|upper }}</span>{% endif %}
+    </div>
+    <p class="muted-sm" style="margin-top:6px;">{% if subscription and subscription.expires_at %}Действует до {{ subscription.expires_at|ru_date }}{% else %}Без срока действия{% endif %}</p>
+    <ul class="checklist" style="margin-top:14px;">
+      <li class="is-done">Автомобилей: {{ cars_used }} из {{ plan_info.max_cars }}</li>
+      <li class="is-done">Фото на автомобиль: до {{ plan_info.max_photos_per_car }}</li>
+      <li class="is-done">Поднятий осталось: {{ boosts_left }} из {{ plan_info.boosts_per_month }} в месяц</li>
+    </ul>
+    <a href="{{ url_for('payments.pricing') }}" class="btn btn-primary btn-block" style="margin-top:16px;">{{ 'Продлить или изменить тариф' if plan != 'free' else 'Выбрать тариф' }}</a>
+  </div>
+
+  {% if orders %}
+    <div class="section-heading"><h2>Ваши заказы</h2></div>
+    <div class="card" style="padding:6px 16px;">
+      {% for o in orders %}
+        <div class="toggle-row">
+          <span>{{ o.plan|upper }} · {{ '{:,}'.format(o.amount).replace(',', ' ') }} ₽<br><small class="text-muted">{{ o.created_at|ru_date }} · {{ o.status_label }}</small></span>
+          {% if o.is_open %}<a class="btn btn-ghost btn-sm" href="{{ url_for('payments.order_page', public_id=o.public_id) }}">Открыть</a>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="section-heading"><h2>Есть промокод?</h2></div>
+  <form method="post" action="{{ url_for('owner.redeem_promo') }}" class="card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field">
+      <label for="code">Промокод</label>
+      <input id="code" name="code" placeholder="KC-PRO-XXXXXX" autocapitalize="characters" autocomplete="off" required>
+    </div>
+    <button type="submit" class="btn btn-ghost btn-block">Активировать</button>
+  </form>
+</div>
+{% endblock %}

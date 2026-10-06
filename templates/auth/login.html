@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Вход — KAVKAZ-CAR{% endblock %}
+{% block robots %}noindex, follow{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+  <h1>Вход</h1>
+  <p class="text-muted" style="margin-bottom:24px;">Войдите, чтобы сохранять избранное и управлять своими объявлениями.</p>
+  <form method="post" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+    <div class="field">
+      <label for="phone">Телефон</label>
+      <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="username" placeholder="+7 900 000-00-00" value="{{ phone|default('') }}" required autofocus>
+    </div>
+    <div class="field">
+      <label for="password">Пароль</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">Войти</button>
+  </form>
+  <p class="auth-alt">Нет аккаунта? <a class="link-accent" href="{{ url_for('auth.register', next=next_url) if next_url else url_for('auth.register') }}">Зарегистрироваться</a></p>
+  <p class="auth-alt" style="margin-top:8px;font-size:13px;">Забыли пароль? <a class="link-accent" href="{{ url_for('main.support') }}#password">Напишите в поддержку</a> — вернём доступ.</p>
+</div>
+{% endblock %}

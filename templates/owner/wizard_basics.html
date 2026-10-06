@@ -1,0 +1,31 @@
+{% extends "owner/_wizard_base.html" %}
+{% block wizard_content %}
+<h1>Какой автомобиль вы сдаёте?</h1>
+<p class="wizard-card__hint">Начните с главного — остальное заполним на следующих шагах.</p>
+<div class="field">
+  <label for="brand">Марка</label>
+  <input id="brand" name="brand" list="brand-list" value="{{ draft.get('brand', '') }}" maxlength="80" placeholder="Например, Mercedes-Benz" required autofocus>
+  <datalist id="brand-list">{% for b in brands %}<option value="{{ b }}">{% endfor %}</datalist>
+</div>
+<div class="field">
+  <label for="model">Модель</label>
+  <input id="model" name="model" value="{{ draft.get('model', '') }}" maxlength="80" placeholder="Например, G63 AMG" required>
+</div>
+<div class="form-grid form-grid--2">
+  <div class="field">
+    <label for="year">Год выпуска</label>
+    <input id="year" name="year" type="number" inputmode="numeric" min="1980" max="2100" value="{{ draft.get('year') or '' }}">
+  </div>
+  <div class="field">
+    <label for="seats">Количество мест</label>
+    <input id="seats" name="seats" type="number" inputmode="numeric" min="1" max="20" value="{{ draft.get('seats') or '' }}">
+  </div>
+</div>
+<div class="field">
+  <label for="body_type">Тип кузова</label>
+  <select id="body_type" name="body_type">
+    <option value="">Не указывать</option>
+    {% for value, label in body_types %}<option value="{{ value }}" {{ 'selected' if draft.get('body_type') == value }}>{{ label }}</option>{% endfor %}
+  </select>
+</div>
+{% endblock %}

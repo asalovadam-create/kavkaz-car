@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Мои автомобили — KAVKAZ-CAR{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% macro stat_tail(s, extended) %}
+  <span title="Просмотры: всего / за 7 дней">👁 {{ s.views }} <small>(+{{ s.views7 }} за 7 дн.)</small></span>
+  <span title="Обращения: всего / за 7 дней">📞 {{ s.contacts }} <small>(+{{ s.contacts7 }} за 7 дн.)</small></span>
+  {% if extended and s.channels %}
+    <span>{% for ch, n in s.channels.items() %}{{ {'call': 'звонки', 'whatsapp': 'WhatsApp', 'telegram': 'Telegram'}.get(ch, ch) }}: {{ n }}{% if not loop.last %} · {% endif %}{% endfor %}</span>
+  {% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="container page">
+  <div class="dash-head">
+    <h1 class="page-title">Добрый день, {{ current_user.full_name or 'владелец' }}</h1>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-card__label">Ваши автомобили</div>
+      <div class="stat-card__value">{{ cars|length }}</div>
+      <div class="stat-card__sub">из {{ plan_info.max_cars }} на тарифе {{ plan|upper }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Просмотры</div>
+      <div class="stat-card__value">{{ views_total }}</div>
+      <div class="stat-card__sub">за всё время</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Контакты</div>
+      <div class="stat-card__value">{{ contacts_total }}</div>
+      <div class="stat-card__sub">звонки и сообщения</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Тариф</div>
+      <div class="stat-card__value">{{ plan|upper }}</div>
+      <div class="stat-card__sub">{% if subscription and subscription.expires_at %}до {{ subscription.expires_at|ru_date }}{% else %}без срока{% endif %}</div>
+      <a class="link-accent" href="{{ url_for('payments.pricing') }}">{{ 'Продлить или изменить' if plan != 'free' else 'Выбрать тариф' }} →</a>
+    </div>
+  </div>
+
+  {% if plan != 'free' and days_left is not none and days_left <= 5 %}
+    <div class="notice notice--accent">
+      <span>Тариф {{ plan|upper }} закончится через {{ days_left }} {{ ru_plural(days_left, 'день', 'дня', 'дней') }}. Продлите, чтобы не потерять приоритет в выдаче.</span>
+      <a class="btn btn-primary btn-sm" href="{{ url_for('payments.pricing') }}">Продлить</a>
+    </div>
+  {% endif %}
+
+  {% if request.args.get('published') %}
+    {% set published_car = cars|selectattr('public_id', 'equalto', request.args.get('published'))|first %}
+    {% if published_car %}
+      <div class="notice notice--accent">
+        <span>🎉 Объявление опубликовано! Отправьте ссылку знакомым — первые звонки обычно приходят оттуда.</span>
+        <button type="button" class="btn btn-primary btn-sm" data-share="{{ site_url }}{{ car_detail_url(published_car) }}">Поделиться</button>
+      </div>
+    {% endif %}
+  {% endif %}
+
+  <div class="section-heading" style="margin-top:28px;">
+    <h2>Ваши автомобили</h2>
+    {% if cars and can_add %}<a href="{{ url_for('owner.wizard_start') }}" class="btn btn-primary btn-sm">+ Добавить автомобиль</a>{% endif %}
+  </div>
+
+  {% if not cars %}
+    <div class="empty-state">
+      <h3>Автомобилей пока нет</h3>
+      <p>Добавьте первый автомобиль — это займёт пару минут.</p>
+      <a href="{{ url_for('owner.wizard_start') }}" class="btn btn-primary">Добавить автомобиль</a>
+    </div>
+  {% else %}
+    {% if not can_add %}
+      <div class="notice">
+        <span>Лимит автомобилей на вашем тарифе исчерпан ({{ plan_info.max_cars }}). Чтобы добавить ещё — выберите тариф побольше.</span>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('payments.pricing') }}">Тарифы</a>
+      </div>
+    {% endif %}
+
+    <div style="display:flex;flex-direction:column;gap:12px;margin-top:14px;">
+      {% for car in cars %}
+        {% set photo = car.primary_photo() %}
+        {% set s = stats[car.id] %}
+        <div class="owner-car-row">
+          {% if photo %}<img src="{{ photo.thumbnail_url or photo.url }}" alt="">{% else %}<span class="owner-car-row__noimg">Нет фото</span>{% endif %}
+          <div class="owner-car-row__body">
+            <div class="owner-car-row__title">{{ car.title() }}</div>
+            <div class="owner-car-row__meta">
+              {{ car.city.name }} · {{ format_price(car.price_per_day) }}{% if car.price_per_day %} / сутки{% endif %} ·
+              <span class="pill {{ 'pill--ok' if car.status == 'published' else ('pill--bad' if car.status == 'blocked' else 'pill--warn') }}">{{ car.status_label }}</span>
+              {% if car.is_boosted() %}<span class="pill pill--warn">В топе</span>{% endif %}
+              {% if car.is_stale() %}<span class="pill pill--bad">Нужно подтвердить</span>{% endif %}
+            </div>
+            <div class="owner-car-row__stats">{{ stat_tail(s, extended_stats) }}</div>
+            {% if not extended_stats %}<p class="muted-sm" style="margin-top:4px;"><a class="link-accent" href="{{ url_for('payments.pricing') }}">Статистика по дням и каналам — на PRO</a></p>{% endif %}
+            {% if car.status == 'blocked' %}<p class="muted-sm" style="margin-top:6px;color:#f2a596;">Объявление заблокировано модератором. Напишите в <a class="link-accent" href="{{ url_for('main.support') }}">поддержку</a>.</p>{% endif %}
+          </div>
+          <div class="owner-car-row__actions row">
+            {% if car.status == 'published' %}<a class="btn btn-ghost btn-sm" href="{{ car_detail_url(car) }}">Смотреть</a>{% endif %}
+            <a class="btn btn-ghost btn-sm" href="{{ url_for('owner.edit_car', public_id=car.public_id) }}">Изменить</a>
+            {% if car.is_stale() %}<button type="button" class="btn btn-primary btn-sm" data-confirm-actual="{{ url_for('owner.confirm_actual', public_id=car.public_id) }}">Подтвердить актуальность</button>{% endif %}
+            {% if car.status == 'published' %}
+              <form method="post" action="{{ url_for('owner.boost_car', public_id=car.public_id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-ghost btn-sm" {{ 'disabled' if car.is_boosted() }} title="Осталось поднятий в этом месяце: {{ boosts_left }}">↑ Поднять ({{ boosts_left }})</button>
+              </form>
+            {% endif %}
+            {% if car.status in ('published', 'paused') %}
+              <form method="post" action="{{ url_for('owner.toggle_status', public_id=car.public_id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-ghost btn-sm">{{ 'Скрыть' if car.status == 'published' else 'Показать' }}</button>
+              </form>
+            {% endif %}
+            <form method="post" action="{{ url_for('owner.delete_car', public_id=car.public_id) }}" data-confirm="Удалить «{{ car.title() }}» навсегда? Это действие нельзя отменить.">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    {% if plan_info.boosts_per_month == 0 %}<p class="muted-sm" style="margin-top:14px;">Поднятие в топ доступно на тарифах <a class="link-accent" href="{{ url_for('payments.pricing') }}">PRO и BUSINESS</a>.</p>{% endif %}
+  {% endif %}
+</div>
+{% endblock %}

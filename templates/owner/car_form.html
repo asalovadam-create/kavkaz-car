@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Изменить {{ car.title() }} — KAVKAZ-CAR{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{# Значение поля: после ошибки показываем то, что ввёл человек, иначе — сохранённое #}
+{% macro v(name, current) %}{{ (form.get(name, '') if form else (current if current is not none else '')) }}{% endmacro %}
+{% macro chk(name, current) %}{{ 'checked' if ((form.get(name) == '1') if form else current) }}{% endmacro %}
+
+{% block content %}
+<div class="container page" style="max-width:640px;">
+  <a href="{{ url_for('owner.dashboard') }}" class="link-accent muted-sm">← Мои автомобили</a>
+  <h1 class="page-title" style="margin-top:10px;">{{ car.title() }}</h1>
+  <p class="page-lead" style="margin-bottom:16px;">Изменения появятся в каталоге сразу после сохранения.</p>
+
+  <div class="card">
+    <h2>Фото</h2>
+    <label class="dropzone" for="photo-input">
+      <svg class="icon" style="width:24px;height:24px;color:var(--accent-strong);"><use href="#icon-plus"></use></svg>
+      <strong>Добавить фото</strong>
+      <input id="photo-input" type="file" accept="image/jpeg,image/png,image/webp" multiple
+             data-photo-upload="{{ url_for('owner.upload_photo', public_id=car.public_id) }}" data-preview-target="photo-grid"
+             data-max-photos="{{ car.owner.current_plan() and plans[car.owner.current_plan()].max_photos_per_car }}">
+    </label>
+    <div id="photo-grid" class="photo-preview-grid" data-photo-grid
+         data-delete-url="{{ url_for('owner.delete_photo', public_id=car.public_id, photo_id=0) | replace('/photos/0/', '/photos/{token}/') }}"
+         data-primary-url="{{ url_for('owner.primary_photo', public_id=car.public_id, photo_id=0) | replace('/photos/0/', '/photos/{token}/') }}">
+      {% for p in car.photos %}
+        <div class="photo-item {{ 'is-primary' if loop.first }}" data-photo-item data-token="{{ p.id }}">
+          <img src="{{ p.thumbnail_url or p.url }}" alt="">
+          <span class="photo-item__badge">Главное</span>
+          <button type="button" class="photo-item__btn photo-item__primary" data-photo-primary aria-label="Сделать главным">★</button>
+          <button type="button" class="photo-item__btn photo-item__del" data-photo-del aria-label="Удалить фото">×</button>
+        </div>
+      {% endfor %}
+    </div>
+    <p class="photo-hint"><span>★ — сделать фото главным</span><span><span data-photo-count>{{ car.photos|length }}</span> из {{ plans[car.owner.current_plan()].max_photos_per_car }}</span></p>
+  </div>
+
+  <form method="post" class="card" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <h2>Автомобиль</h2>
+    <div class="form-grid form-grid--2">
+      <div class="field"><label for="brand">Марка</label><input id="brand" name="brand" value="{{ v('brand', car.brand) }}" maxlength="80" required></div>
+      <div class="field"><label for="model">Модель</label><input id="model" name="model" value="{{ v('model', car.model) }}" maxlength="80" required></div>
+      <div class="field"><label for="year">Год выпуска</label><input id="year" name="year" type="number" inputmode="numeric" min="1980" max="2100" value="{{ v('year', car.year) }}"></div>
+      <div class="field"><label for="seats">Мест</label><input id="seats" name="seats" type="number" inputmode="numeric" min="1" max="20" value="{{ v('seats', car.seats) }}"></div>
+    </div>
+    <div class="field">
+      <label for="body_type">Тип кузова</label>
+      <select id="body_type" name="body_type">
+        <option value="">Не указывать</option>
+        {% for value, label in body_types %}<option value="{{ value }}" {{ 'selected' if (form.get('body_type') if form else car.body_type) == value }}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="city_slug">Город</label>
+      <select id="city_slug" name="city_slug" required>
+        {% for city in cities %}<option value="{{ city.slug }}" {{ 'selected' if (form.get('city_slug') if form else car.city.slug) == city.slug }}>{{ city.name }}</option>{% endfor %}
+      </select>
+    </div>
+
+    <hr class="divider">
+    <h2>Цена и условия</h2>
+    <div class="form-grid form-grid--2">
+      <div class="field"><label for="price_per_day">Цена за сутки, ₽</label><input id="price_per_day" name="price_per_day" type="number" inputmode="numeric" min="500" max="1000000" step="100" value="{{ v('price_per_day', car.price_per_day) }}" placeholder="По запросу"></div>
+      <div class="field"><label for="min_rental_days">Минимум суток</label><input id="min_rental_days" name="min_rental_days" type="number" inputmode="numeric" min="1" max="365" value="{{ v('min_rental_days', car.min_rental_days) }}"></div>
+    </div>
+    <div class="field">
+      <label for="min_driver_age">Возраст водителя, от</label>
+      <select id="min_driver_age" name="min_driver_age">
+        {% for age in (18, 21, 23, 25) %}<option value="{{ age }}" {{ 'selected' if ((form.get('min_driver_age') | int(0)) if form else car.min_driver_age) == age }}>{{ age }} {{ 'года' if age in (21, 23) else 'лет' }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="description">Описание</label>
+      <textarea id="description" name="description" rows="4" maxlength="2000">{{ v('description', car.description) }}</textarea>
+    </div>
+    {% for name, label, current in [('transmission_auto', 'Автоматическая коробка', car.transmission_auto), ('with_driver', 'Можно с водителем', car.with_driver), ('for_wedding', 'Подходит для свадьбы', car.for_wedding), ('delivery_available', 'Есть доставка', car.delivery_available)] %}
+      <div class="toggle-row"><span>{{ label }}</span><label class="switch"><input type="checkbox" name="{{ name }}" value="1" {{ chk(name, current) }} aria-label="{{ label }}"><span class="switch__track"></span></label></div>
+    {% endfor %}
+
+    <hr class="divider">
+    <h2>Контакты</h2>
+    <div class="field"><label for="phone">Телефон</label><input id="phone" name="phone" type="tel" inputmode="tel" value="{{ v('phone', car.phone) }}" required></div>
+    <div class="form-grid form-grid--2">
+      <div class="field"><label for="whatsapp">WhatsApp</label><input id="whatsapp" name="whatsapp" type="tel" inputmode="tel" value="{{ v('whatsapp', car.whatsapp) }}"></div>
+      <div class="field"><label for="telegram">Telegram</label><input id="telegram" name="telegram" value="{{ v('telegram', car.telegram) }}" placeholder="@username" autocapitalize="off"></div>
+    </div>
+
+    {% if car.status in ('published', 'paused') %}
+      <hr class="divider">
+      <div class="field">
+        <label for="status">Статус объявления</label>
+        <select id="status" name="status">
+          <option value="published" {{ 'selected' if car.status == 'published' }}>Опубликовано — видно в каталоге</option>
+          <option value="paused" {{ 'selected' if car.status == 'paused' }}>Скрыто — клиенты не видят</option>
+        </select>
+      </div>
+    {% else %}
+      <p class="muted-sm" style="margin-top:14px;">Статус: {{ car.status_label }}. Изменить его самостоятельно нельзя — напишите в <a class="link-accent" href="{{ url_for('main.support') }}">поддержку</a>.</p>
+    {% endif %}
+
+    <button type="submit" class="btn btn-primary btn-block" style="margin-top:20px;">Сохранить изменения</button>
+  </form>
+</div>
+{% endblock %}

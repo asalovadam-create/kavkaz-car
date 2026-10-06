@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Помощь и контакты — KAVKAZ-CAR{% endblock %}
+{% block description %}Как арендовать автомобиль на KAVKAZ-CAR, как разместить своё объявление, как обезопасить сделку и как связаться с поддержкой.{% endblock %}
+{% block canonical %}{{ site_url }}{{ url_for('main.support') }}{% endblock %}
+
+{% block content %}
+<div class="container page" style="max-width:820px;">
+  <h1 class="page-title">Помощь и контакты</h1>
+  <p class="page-lead">Коротко о том, как всё работает, и куда писать, если что-то пошло не так.</p>
+
+  <div class="card">
+    <h2>Связаться с поддержкой</h2>
+    <div class="contact-list">
+      {% if support_telegram %}<a class="btn btn-primary" href="https://t.me/{{ support_telegram.lstrip('@').split('/')[-1] }}" target="_blank" rel="noopener">Telegram</a>{% endif %}
+      {% if support_whatsapp %}<a class="btn btn-ghost" href="https://wa.me/{{ support_whatsapp | replace('+', '') | replace(' ', '') }}" target="_blank" rel="noopener">WhatsApp</a>{% endif %}
+      {% if support_phone %}<a class="btn btn-ghost" href="tel:{{ support_phone | replace(' ', '') }}">{{ support_phone }}</a>{% endif %}
+      {% if not (support_telegram or support_whatsapp or support_phone) %}<p class="muted-sm">Контакты поддержки скоро появятся на этой странице.</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="section-heading"><h2>Если вы арендуете</h2></div>
+  <ol class="steps-list">
+    <li><span>Найдите автомобиль в каталоге или воспользуйтесь подбором — фильтры по городу, бюджету, кузову, водителю.</span></li>
+    <li><span>Позвоните владельцу или напишите в WhatsApp / Telegram прямо из объявления. Уточните свободные даты, залог и условия.</span></li>
+    <li><span>Договаривайтесь об аренде и оплате напрямую с владельцем — KAVKAZ-CAR не участвует в сделке.</span></li>
+  </ol>
+
+  <div class="section-heading"><h2>Как обезопасить сделку</h2></div>
+  <div class="faq">
+    <details open><summary>На что обратить внимание перед арендой</summary><p>Попросите договор аренды и убедитесь, что имя владельца в нём совпадает с документами на автомобиль. Проверьте страховку и сфотографируйте состояние машины при получении.</p></details>
+    <details><summary>Не переводите деньги незнакомым людям заранее</summary><p>Если владелец требует крупную предоплату без договора и встречи — это повод насторожиться. Предоплату и залог обсуждайте только письменно и по возможности при личной встрече.</p></details>
+    <details><summary>Объявление выглядит подозрительно</summary><p>Нажмите «Пожаловаться на объявление» внизу страницы автомобиля. Мы проверим и при необходимости скроем или заблокируем объявление.</p></details>
+  </div>
+
+  <div class="section-heading"><h2>Если вы владелец</h2></div>
+  <div class="faq">
+    <details><summary>Как разместить автомобиль?</summary><p><a class="link-accent" href="{{ url_for('owner.become') if current_user else url_for('auth.register', role='owner') }}">Зарегистрируйтесь как владелец</a> и пройдите короткий мастер: данные автомобиля, фото, условия, город и контакты. Первое объявление бесплатно.</p></details>
+    <details><summary>Сколько это стоит?</summary><p>Подробности — на странице <a class="link-accent" href="{{ url_for('payments.pricing') }}">тарифов</a>. Комиссии с аренды нет.</p></details>
+    <details id="password"><summary>Забыли пароль</summary><p>Автоматического восстановления по SMS пока нет. Напишите в поддержку с номера телефона, на который зарегистрирован аккаунт, — выдадим временный пароль. Сразу после входа смените его в профиле.</p></details>
+  </div>
+</div>
+{% endblock %}

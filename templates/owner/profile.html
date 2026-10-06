@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Профиль — KAVKAZ-CAR{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<div class="page-narrow">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+    <div>
+      <strong style="font-size:17px;">{{ current_user.full_name or 'Без имени' }}</strong>
+      <p class="muted-sm">{{ current_user.phone | phone_fmt }}</p>
+    </div>
+    {% if current_user.is_owner and plan != 'free' %}<span class="badge {{ 'badge-business' if plan == 'business' else 'badge-pro' }}">{{ plan|upper }}</span>{% endif %}
+  </div>
+
+  {% if current_user.is_owner %}
+    <div class="row" style="margin:14px 0 4px;">
+      <a href="{{ url_for('owner.dashboard') }}" class="btn btn-ghost" style="flex:1;">Мои автомобили</a>
+      <a href="{{ url_for('owner.wizard_start') }}" class="btn btn-primary" style="flex:1;">Добавить автомобиль</a>
+    </div>
+  {% else %}
+    <div class="notice notice--accent">
+      <span><strong>Хотите сдавать свой автомобиль?</strong><br><span class="muted-sm">Разместите его на KAVKAZ-CAR — первое объявление бесплатно.</span></span>
+      <a class="btn btn-primary btn-sm" href="{{ url_for('owner.become') }}">Стать владельцем</a>
+    </div>
+  {% endif %}
+
+  <hr class="divider">
+  <h2 style="font-size:17px;margin-bottom:14px;">{{ 'Данные владельца' if current_user.is_owner else 'Ваши данные' }}</h2>
+
+  {% if current_user.is_owner %}
+    <form method="post" action="{{ url_for('owner.upload_logo') }}" enctype="multipart/form-data" class="logo-edit">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if profile and profile.logo_url %}<img class="owner-card__logo" src="{{ profile.logo_url }}" alt="Логотип">{% else %}<span class="owner-card__logo owner-card__logo--empty">{{ (current_user.full_name or '?')[:1]|upper }}</span>{% endif %}
+      <input type="file" name="logo" accept="image/jpeg,image/png,image/webp" aria-label="Логотип или фото" style="flex:1;min-width:0;" data-autosubmit>
+    </form>
+  {% endif %}
+
+  <form method="post" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field">
+      <label for="full_name">{{ 'Имя или название компании' if current_user.is_owner else 'Имя' }}</label>
+      <input id="full_name" name="full_name" value="{{ current_user.full_name or '' }}" maxlength="120" required>
+      {% if current_user.is_owner %}<p class="field-hint">Это увидят клиенты в ваших объявлениях.</p>{% endif %}
+    </div>
+    {% if current_user.is_owner and profile %}
+      {% if plan_info.business_page %}
+        <div class="field">
+          <label for="company_name">Название проката (для страницы проката)</label>
+          <input id="company_name" name="company_name" value="{{ profile.company_name or '' }}" maxlength="150">
+        </div>
+      {% endif %}
+      <div class="field">
+        <label for="description">Описание</label>
+        <textarea id="description" name="description" rows="3" maxlength="1500" placeholder="Чем вы занимаетесь, как передаёте автомобили, что входит в аренду">{{ profile.description or '' }}</textarea>
+      </div>
+      <div class="field">
+        <label for="work_hours">График работы</label>
+        <input id="work_hours" name="work_hours" value="{{ profile.work_hours or '' }}" maxlength="200" placeholder="Например, ежедневно 10:00–22:00">
+      </div>
+    {% endif %}
+    <button type="submit" class="btn btn-primary btn-block">Сохранить</button>
+  </form>
+
+  {% if current_user.is_owner and profile %}
+    <hr class="divider">
+    <h2 style="font-size:17px;">Доверие клиентов</h2>
+    <p class="muted-sm">Заполненный профиль вызывает больше доверия и немного помогает в выдаче. Заполнено на {{ profile.profile_completion_percent() }}%.</p>
+    <div class="progress"><span style="width:{{ profile.profile_completion_percent() }}%"></span></div>
+    <ul class="checklist">
+      {% for label, done in profile.completion_checklist() %}<li class="{{ 'is-done' if done }}">{{ label }}</li>{% endfor %}
+    </ul>
+    {% if profile.public_id and plan_info.business_page %}<p style="margin-top:14px;"><a class="link-accent" href="{{ url_for('cars.owner_page', public_id=profile.public_id) }}">Так вас видят клиенты: страница проката →</a></p>{% endif %}
+    <p class="muted-sm" style="margin-top:6px;">Чтобы подтвердить телефон, напишите в <a class="link-accent" href="{{ url_for('main.support') }}">поддержку</a> — мы перезвоним и поставим отметку.</p>
+
+    <hr class="divider">
+    <h2 style="font-size:17px;">Тариф</h2>
+    <p class="text-muted" style="margin:6px 0 12px;">Текущий тариф: <strong>{{ plan|upper }}</strong>.</p>
+    <a href="{{ url_for('owner.subscription') }}" class="btn btn-ghost btn-block">Тариф и подписка</a>
+  {% endif %}
+
+  <hr class="divider">
+  <h2 style="font-size:17px;margin-bottom:14px;">Смена пароля</h2>
+  <form method="post" action="{{ url_for('owner.change_password') }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field"><label for="current_password">Текущий пароль</label><input id="current_password" name="current_password" type="password" autocomplete="current-password" required></div>
+    <div class="field"><label for="new_password">Новый пароль</label><input id="new_password" name="new_password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required><p class="password-hint">Не короче 8 символов.</p></div>
+    <div class="field"><label for="new_password_confirm">Повторите новый пароль</label><input id="new_password_confirm" name="new_password_confirm" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></div>
+    <button type="submit" class="btn btn-ghost btn-block">Сменить пароль</button>
+  </form>
+
+  <hr class="divider">
+  <form method="post" action="{{ url_for('auth.logout') }}" data-confirm="Выйти из аккаунта?">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-danger btn-block">Выйти из аккаунта</button>
+  </form>
+</div>
+{% endblock %}

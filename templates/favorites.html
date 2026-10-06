@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Избранное — KAVKAZ-CAR{% endblock %}
+{% block robots %}noindex, follow{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <h1 class="page-title">Избранное</h1>
+  {% if not current_user %}
+    <p class="page-lead">Избранное хранится в этом браузере. <a class="link-accent" href="{{ url_for('auth.register') }}">Создайте аккаунт</a> или <a class="link-accent" href="{{ url_for('auth.login') }}">войдите</a> — тогда оно сохранится на всех ваших устройствах.</p>
+  {% endif %}
+
+  {% if current_user %}
+    {% if cars %}
+      <div class="car-grid">{% include "partials/car_cards.html" %}</div>
+    {% else %}
+      <div class="empty-state">
+        <h3>Пока пусто</h3>
+        <p>Нажимайте на сердечко в карточке, чтобы сохранить понравившиеся автомобили.</p>
+        <a href="{{ url_for('cars.catalog') }}" class="btn btn-primary">Перейти в каталог</a>
+      </div>
+    {% endif %}
+  {% else %}
+    <div id="guest-favorites"><div class="car-grid"><div class="skeleton" style="aspect-ratio:3/4;border-radius:var(--radius);"></div></div></div>
+    <div id="favorites-empty" class="empty-state" hidden>
+      <h3>Пока пусто</h3>
+      <p>Нажимайте на сердечко в карточке, чтобы сохранить понравившиеся автомобили.</p>
+      <a href="{{ url_for('cars.catalog') }}" class="btn btn-primary">Перейти в каталог</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

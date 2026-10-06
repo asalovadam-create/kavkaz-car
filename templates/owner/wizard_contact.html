@@ -1,0 +1,21 @@
+{% extends "owner/_wizard_base.html" %}
+{% block wizard_content %}
+<h1>Как с вами связаться?</h1>
+<p class="wizard-card__hint">Эти контакты увидят клиенты в объявлении. Нужен хотя бы телефон.</p>
+<div class="field">
+  <label for="phone">Телефон</label>
+  <input id="phone" name="phone" type="tel" inputmode="tel" value="{{ draft.get('phone') or '' }}" placeholder="+7 900 000-00-00" required>
+</div>
+<div class="field">
+  <label for="whatsapp">WhatsApp <span class="text-muted">(необязательно)</span></label>
+  <input id="whatsapp" name="whatsapp" type="tel" inputmode="tel" value="{{ draft.get('whatsapp') or '' }}" placeholder="Если отличается от телефона">
+</div>
+<div class="field">
+  <label for="telegram">Telegram <span class="text-muted">(необязательно)</span></label>
+  <input id="telegram" name="telegram" value="{{ draft.get('telegram') or '' }}" placeholder="@username" autocapitalize="off">
+</div>
+<label class="checkbox-row" style="align-items:flex-start;">
+  <input type="checkbox" name="contact_consent" value="1" {{ 'checked' if draft.get('contact_consent') }} style="margin-top:3px;">
+  <span>Разрешаю показывать эти контакты клиентам в объявлении и подтверждаю, что принимаю <a class="link-accent" href="{{ url_for('main.listing_rules') }}" target="_blank">правила размещения</a>.</span>
+</label>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "admin/_base.html" %}
+{% block admin_content %}
+  <form method="post" class="row" style="margin-bottom:20px;flex-wrap:wrap;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <select name="plan" class="admin-input" aria-label="Тариф">{% for p in plans if p != 'free' %}<option value="{{ p }}">{{ p|upper }}</option>{% endfor %}</select>
+    <input type="number" name="duration_days" value="30" min="1" max="3650" class="admin-input" style="width:90px;" aria-label="Дней">
+    <button type="submit" class="btn btn-primary btn-sm">Создать промокод</button>
+    <span class="muted-sm">Код действует 90 дней на активацию.</span>
+  </form>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Код</th><th>Тариф</th><th>Срок</th><th>Создан</th><th>Статус</th></tr></thead>
+      <tbody>
+        {% for c in codes %}
+          <tr>
+            <td>{{ c.code }} <button type="button" class="btn btn-ghost btn-sm" data-copy="{{ c.code }}">Копировать</button></td>
+            <td>{{ c.plan|upper }}</td>
+            <td>{{ c.duration_days }} дн.</td>
+            <td>{{ c.created_at|ru_date }}</td>
+            <td>{% if c.used_at %}<span class="pill">использован {{ c.used_at|ru_date }}</span>{% elif c.expires_at and c.expires_at < now %}<span class="pill pill--bad">истёк</span>{% else %}<span class="pill pill--ok">активен</span>{% endif %}</td>
+          </tr>
+        {% else %}<tr><td colspan="5" class="text-muted">Промокодов пока нет.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

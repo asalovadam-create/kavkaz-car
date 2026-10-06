@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Регистрация — KAVKAZ-CAR{% endblock %}
+{% block robots %}noindex, follow{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+  <h1>Регистрация</h1>
+  <p class="text-muted" style="margin-bottom:24px;">Занимает меньше минуты. Телефон станет вашим логином.</p>
+  <form method="post" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+
+    <div class="field">
+      <label>Вы...</label>
+      <div class="role-picker">
+        <label class="role-card">
+          <input type="radio" name="role" value="client" {{ 'checked' if role != 'owner' }}>
+          <span class="role-card__title">Ищу автомобиль</span>
+          <span class="role-card__desc">Хочу арендовать машину</span>
+        </label>
+        <label class="role-card">
+          <input type="radio" name="role" value="owner" {{ 'checked' if role == 'owner' }}>
+          <span class="role-card__title">Сдаю свои автомобили</span>
+          <span class="role-card__desc">Хочу разместить объявление</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="full_name">Имя или название компании</label>
+      <input id="full_name" name="full_name" type="text" placeholder="Например: Ахмад, или «Кавказ Прокат»" value="{{ full_name|default('') }}" required autofocus>
+      <p class="field-hint">Владельцам: именно это увидит клиент в вашем объявлении.</p>
+    </div>
+    <div class="field">
+      <label for="age">Возраст</label>
+      <input id="age" name="age" type="number" min="18" max="100" placeholder="18" value="{{ age|default('') }}" required>
+      <p class="field-hint">Регистрация на KAVKAZ-CAR доступна только с 18 лет.</p>
+    </div>
+    <div class="field">
+      <label for="phone">Телефон</label>
+      <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="username" placeholder="+7 900 000-00-00" value="{{ phone|default('') }}" required>
+    </div>
+    <div class="field">
+      <label for="password">Пароль</label>
+      <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
+      <p class="field-hint">Не короче 8 символов.</p>
+    </div>
+    <div class="field">
+      <label for="password_confirm">Повторите пароль</label>
+      <input id="password_confirm" name="password_confirm" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">Зарегистрироваться</button>
+  </form>
+  <p class="auth-alt">
+    Уже есть аккаунт? <a class="link-accent" href="{{ url_for('auth.login') }}">Войти</a>
+  </p>
+  <p class="text-muted" style="margin-top:14px;font-size:12px;text-align:center;">
+    Регистрируясь, вы принимаете <a href="{{ url_for('main.terms') }}">пользовательское соглашение</a> и <a href="{{ url_for('main.privacy') }}">политику конфиденциальности</a>.
+  </p>
+</div>
+{% endblock %}

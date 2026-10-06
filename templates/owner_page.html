@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% set title_name = profile.company_name or profile.display_name %}
+{% block title %}{{ title_name }} — автомобили в аренду | KAVKAZ-CAR{% endblock %}
+{% block description %}{{ title_name }}: {{ cars|length }} {{ ru_plural(cars|length, 'автомобиль', 'автомобиля', 'автомобилей') }} в аренду{% if cities %} ({{ cities|join(', ') }}){% endif %}.{% endblock %}
+{% block robots %}{% if cars %}index, follow{% else %}noindex, follow{% endif %}{% endblock %}
+{% block canonical %}{{ site_url }}{{ url_for('cars.owner_page', public_id=profile.public_id) }}{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <div class="card owner-card" style="align-items:flex-start;">
+    {% if profile.logo_url %}
+      <img class="owner-card__logo" style="width:72px;height:72px;" src="{{ profile.logo_url }}" alt="">
+    {% else %}
+      <span class="owner-card__logo owner-card__logo--empty" style="width:72px;height:72px;font-size:28px;" aria-hidden="true">{{ title_name[:1] | upper }}</span>
+    {% endif %}
+    <div>
+      <h1 class="page-title" style="margin-bottom:4px;">{{ title_name }}
+        {% if plan != 'free' %}<span class="badge {{ 'badge-business' if plan == 'business' else 'badge-pro' }}" style="vertical-align:middle;">{{ plans[plan].name }}</span>{% endif %}
+      </h1>
+      <p class="muted-sm">{% if cities %}{{ cities|join(', ') }}{% endif %}{% if profile.work_hours %}{% if cities %} · {% endif %}{{ profile.work_hours }}{% endif %}</p>
+      {% if profile.phone_verified %}<p class="muted-sm" style="margin-top:4px;">✓ Телефон подтверждён</p>{% endif %}
+      {% if profile.description %}<p class="text-muted pre-line" style="margin-top:10px;">{{ profile.description }}</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="section-heading"><h2>Автомобили ({{ cars|length }})</h2></div>
+  {% if cars %}
+    <div class="car-grid">{% include "partials/car_cards.html" %}</div>
+  {% else %}
+    <div class="empty-state"><h3>Сейчас нет доступных автомобилей</h3><p>Загляните позже или посмотрите другие предложения.</p><a class="btn btn-primary" href="{{ url_for('cars.catalog') }}">В каталог</a></div>
+  {% endif %}
+</div>
+{% endblock %}

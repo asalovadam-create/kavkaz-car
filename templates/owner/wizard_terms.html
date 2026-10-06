@@ -1,0 +1,32 @@
+{% extends "owner/_wizard_base.html" %}
+{% block wizard_content %}
+<h1>Цена и условия</h1>
+<p class="wizard-card__hint">Чем понятнее условия, тем меньше лишних вопросов и тем охотнее звонят.</p>
+<div class="field">
+  <label for="price_per_day">Цена за сутки, ₽</label>
+  <input id="price_per_day" name="price_per_day" type="number" inputmode="numeric" min="500" max="1000000" step="100" value="{{ draft.get('price_per_day') or '' }}" placeholder="Например, 8000">
+  <p class="field-hint">Оставьте пустым, если цена «по запросу». Объявления с ценой получают больше звонков.</p>
+</div>
+<div class="form-grid form-grid--2">
+  <div class="field">
+    <label for="min_rental_days">Минимум суток аренды</label>
+    <input id="min_rental_days" name="min_rental_days" type="number" inputmode="numeric" min="1" max="365" value="{{ draft.get('min_rental_days') or 1 }}">
+  </div>
+  <div class="field">
+    <label for="min_driver_age">Возраст водителя, от</label>
+    <select id="min_driver_age" name="min_driver_age">
+      {% for age in (18, 21, 23, 25) %}<option value="{{ age }}" {{ 'selected' if (draft.get('min_driver_age') or 18) == age }}>{{ age }} {{ 'года' if age in (21, 23) else 'лет' }}</option>{% endfor %}
+    </select>
+  </div>
+</div>
+<div class="field">
+  <label for="description">Описание</label>
+  <textarea id="description" name="description" rows="4" maxlength="2000" placeholder="Залог, пробег, страховка, как передаёте автомобиль…">{{ draft.get('description') or '' }}</textarea>
+</div>
+{% for name, label in [('transmission_auto', 'Автоматическая коробка'), ('with_driver', 'Можно с водителем'), ('for_wedding', 'Подходит для свадьбы'), ('delivery_available', 'Есть доставка')] %}
+  <div class="toggle-row">
+    <span>{{ label }}</span>
+    <label class="switch"><input type="checkbox" name="{{ name }}" value="1" {{ 'checked' if draft.get(name) }} aria-label="{{ label }}"><span class="switch__track"></span></label>
+  </div>
+{% endfor %}
+{% endblock %}

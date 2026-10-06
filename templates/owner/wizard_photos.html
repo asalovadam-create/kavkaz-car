@@ -1,0 +1,26 @@
+{% extends "owner/_wizard_base.html" %}
+{% block wizard_content %}
+<h1>Добавьте фото</h1>
+<p class="wizard-card__hint">Хорошие фото — главное, что решает, позвонят вам или нет. Снимайте днём, со всех сторон и салон. Первое фото — обложка объявления.</p>
+
+<label class="dropzone" for="photo-input">
+  <svg class="icon" style="width:26px;height:26px;color:var(--accent-strong);"><use href="#icon-plus"></use></svg>
+  <strong>Выбрать фото</strong>
+  <span>JPG, PNG или WEBP, можно несколько сразу</span>
+  <input id="photo-input" type="file" accept="image/jpeg,image/png,image/webp" multiple
+         data-photo-upload="{{ url_for('owner.wizard_upload_photo') }}" data-preview-target="photo-grid" data-max-photos="{{ max_photos }}">
+</label>
+
+<div id="photo-grid" class="photo-preview-grid" data-photo-grid
+     data-delete-url="{{ url_for('owner.wizard_delete_photo') }}" data-primary-url="{{ url_for('owner.wizard_primary_photo') }}">
+  {% for p in draft.get('photos', []) %}
+    <div class="photo-item {{ 'is-primary' if loop.first }}" data-photo-item data-token="{{ p.storage_public_id }}">
+      <img src="{{ p.thumbnail_url or p.url }}" alt="">
+      <span class="photo-item__badge">Главное</span>
+      <button type="button" class="photo-item__btn photo-item__primary" data-photo-primary aria-label="Сделать главным">★</button>
+      <button type="button" class="photo-item__btn photo-item__del" data-photo-del aria-label="Удалить фото">×</button>
+    </div>
+  {% endfor %}
+</div>
+<p class="photo-hint"><span>★ — сделать фото главным</span><span><span data-photo-count>{{ draft.get('photos', [])|length }}</span> из {{ max_photos }}</span></p>
+{% endblock %}

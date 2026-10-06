@@ -1,0 +1,36 @@
+{% extends "admin/_base.html" %}
+{% block admin_content %}
+  <div class="row" style="margin-bottom:16px;flex-wrap:wrap;">
+    <a href="{{ url_for('admin_panel.cars') }}" class="btn btn-sm {{ 'btn-primary' if not status else 'btn-ghost' }}">Все</a>
+    {% for s in statuses %}<a href="{{ url_for('admin_panel.cars', status=s) }}" class="btn btn-sm {{ 'btn-primary' if status == s else 'btn-ghost' }}">{{ status_labels[s] }}</a>{% endfor %}
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Автомобиль</th><th>Владелец</th><th>Город</th><th>Цена</th><th>Статус</th><th>Действия</th></tr></thead>
+      <tbody>
+        {% for car in cars %}
+          <tr>
+            <td>{% if car.status == 'published' %}<a class="link-accent" href="{{ car_detail_url(car) }}" target="_blank" rel="noopener">{{ car.title() }}</a>{% else %}{{ car.title() }}{% endif %}</td>
+            <td>{{ car.owner.phone }}</td>
+            <td>{{ car.city.name }}</td>
+            <td>{{ format_price(car.price_per_day) }}</td>
+            <td><span class="pill {{ 'pill--ok' if car.status == 'published' else ('pill--bad' if car.status == 'blocked' else 'pill--warn') }}">{{ car.status_label }}</span></td>
+            <td>
+              <div class="row">
+                <form method="post" action="{{ url_for('admin_panel.set_car_status', car_id=car.id) }}" class="row">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="filter" value="{{ status or '' }}">
+                  <select name="status" class="admin-input" aria-label="Статус">{% for s in statuses %}<option value="{{ s }}" {{ 'selected' if s == car.status }}>{{ status_labels[s] }}</option>{% endfor %}</select>
+                  <button type="submit" class="btn btn-ghost btn-sm">Применить</button>
+                </form>
+                <form method="post" action="{{ url_for('admin_panel.delete_car', car_id=car.id) }}" data-confirm="Удалить «{{ car.title() }}» безвозвратно вместе с фото?">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% else %}<tr><td colspan="6" class="text-muted">Автомобилей нет.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

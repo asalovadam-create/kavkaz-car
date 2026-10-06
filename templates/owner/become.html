@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Сдавать автомобили — KAVKAZ-CAR{% endblock %}
+{% block robots %}noindex, follow{% endblock %}
+
+{% block content %}
+<div class="page-narrow">
+  <h1 class="page-title">Хотите сдавать автомобили?</h1>
+  <p class="page-lead">Разместите свой автомобиль на KAVKAZ-CAR — клиенты будут звонить вам напрямую. Ваш аккаунт останется прежним, поиск и избранное продолжат работать.</p>
+
+  <div class="card">
+    <ol class="steps-list">
+      <li><span>Добавьте автомобиль — это пошаговый мастер на 5 минут.</span></li>
+      <li><span>Первое объявление бесплатно. Больше машин и продвижение — на <a class="link-accent" href="{{ url_for('payments.pricing') }}">платных тарифах</a>.</span></li>
+      <li><span>Получайте звонки, WhatsApp и Telegram — без комиссии с аренды.</span></li>
+    </ol>
+    <form method="post" style="margin-top:22px;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-primary btn-block">Да, хочу сдавать автомобили</button>
+    </form>
+  </div>
+  <p class="auth-alt"><a class="link-accent" href="{{ url_for('cars.catalog') }}">Нет, я только арендую</a></p>
+</div>
+{% endblock %}

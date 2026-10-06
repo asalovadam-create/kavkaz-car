@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% set idx = steps.index(step) %}
+{% block title %}Добавить автомобиль — шаг {{ idx + 1 }} из {{ steps|length }} — KAVKAZ-CAR{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:24px; max-width:560px;">
+  <div class="wizard-steps" aria-hidden="true">
+    {% for s in steps %}<span class="{{ 'is-done' if loop.index0 < idx else ('is-current' if s == step else '') }}"></span>{% endfor %}
+  </div>
+  <div class="wizard-meta"><span>Шаг <strong>{{ idx + 1 }}</strong> из {{ steps|length }} · {{ step_titles[step] }}</span><a href="{{ url_for('owner.dashboard') }}" class="link-accent">Выйти</a></div>
+
+  <form method="post" class="wizard-card" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% block wizard_content %}{% endblock %}
+
+    <div class="wizard-actions">
+      {% if idx > 0 %}<a href="{{ url_for('owner.wizard_step', step=steps[idx - 1]) }}" class="btn btn-ghost">Назад</a>{% endif %}
+      <button type="submit" class="btn btn-primary">{{ 'Опубликовать автомобиль' if step == 'review' else 'Далее' }}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

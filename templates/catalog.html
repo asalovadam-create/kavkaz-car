@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}{% if request.args.get('q') %}«{{ request.args.get('q')[:40] }}» — аренда авто{% else %}Каталог автомобилей в аренду{% endif %} — KAVKAZ-CAR{% endblock %}
+{% block description %}Каталог автомобилей в аренду на Северном Кавказе: Грозный, Махачкала, Владикавказ, Нальчик и другие города. Фильтры по цене, кузову, водителю и свадьбе.{% endblock %}
+{% block canonical %}{{ site_url }}{{ url_for('cars.catalog') }}{% endblock %}
+{% block robots %}{% if request.args.get('q') or request.args.get('page') %}noindex, follow{% else %}index, follow{% endif %}{% endblock %}
+
+{% macro flag(name, label) %}
+  <button type="button" class="filter-pill {{ 'is-active' if request.args.get(name) == '1' }}" data-toggle-param="{{ name }}" aria-pressed="{{ 'true' if request.args.get(name) == '1' else 'false' }}">{{ label }}</button>
+{% endmacro %}
+
+{% block content %}
+<div class="container">
+  <div class="catalog-head">
+    <h1>{{ total_count }} {{ ru_plural(total_count, 'автомобиль', 'автомобиля', 'автомобилей') }}</h1>
+    <div class="catalog-tools">
+      <form method="get" action="{{ url_for('cars.catalog') }}">
+        {% for key, value in request.args.items() if key not in ('sort', 'page') %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
+        <label class="visually-hidden" for="sort">Сортировка</label>
+        <select id="sort" name="sort" class="sort-select" data-autosubmit>
+          {% for key, label in sort_modes.items() %}<option value="{{ key }}" {{ 'selected' if key == sort }}>{{ label }}</option>{% endfor %}
+        </select>
+      </form>
+      <button type="button" class="btn btn-ghost btn-sm filters-toggle" data-sheet-open="filters-sheet">
+        <svg class="icon" style="width:16px;height:16px;"><use href="#icon-filter"></use></svg>Фильтры
+      </button>
+    </div>
+  </div>
+
+  <div class="filters-bar" role="group" aria-label="Быстрые фильтры">
+    {{ flag('with_driver', 'С водителем') }}
+    {{ flag('for_wedding', 'Для свадьбы') }}
+    {{ flag('delivery', 'Доставка') }}
+    {{ flag('automatic', 'Автомат') }}
+    {{ flag('premium', 'Премиум') }}
+  </div>
+
+  {% if chips %}
+    <div class="chip-row">
+      {% for chip in chips %}<a href="{{ chip.url }}" class="chip-remove" aria-label="Убрать фильтр: {{ chip.label }}">{{ chip.label }} <svg class="icon" style="width:12px;height:12px;"><use href="#icon-close"></use></svg></a>{% endfor %}
+      <a href="{{ url_for('cars.catalog') }}" class="chip-remove" style="background:transparent;border-color:var(--border-strong);">Сбросить всё</a>
+    </div>
+  {% endif %}
+
+  <div class="catalog-layout">
+    <aside id="filters-sheet" class="bottom-sheet glass" aria-label="Фильтры">
+      <div class="bottom-sheet__handle"></div>
+      <h3>Фильтры</h3>
+      <form method="get" action="{{ url_for('cars.catalog') }}" class="stack" style="margin-top:16px;">
+        <input type="hidden" name="sort" value="{{ sort }}">
+        <div class="field">
+          <label for="f-q">Поиск</label>
+          <input id="f-q" type="search" name="q" value="{{ request.args.get('q', '') }}" placeholder="Марка, модель или город">
+        </div>
+        <div class="field">
+          <label for="f-city">Город</label>
+          <select id="f-city" name="city">
+            <option value="">Любой город</option>
+            {% for city in cities %}<option value="{{ city.slug }}" {{ 'selected' if request.args.get('city') == city.slug }}>{{ city.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-body">Тип кузова</label>
+          <select id="f-body" name="body_type">
+            <option value="">Любой</option>
+            {% for value, label in body_types %}<option value="{{ value }}" {{ 'selected' if request.args.get('body_type') == value }}>{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-price">Бюджет, до ₽ в сутки</label>
+          <input id="f-price" type="number" inputmode="numeric" min="0" step="500" name="price_max" value="{{ request.args.get('price_max', '') }}">
+        </div>
+        <div class="form-grid form-grid--2">
+          <div class="field">
+            <label for="f-year">Год, от</label>
+            <input id="f-year" type="number" inputmode="numeric" min="1980" name="year_min" value="{{ request.args.get('year_min', '') }}">
+          </div>
+          <div class="field">
+            <label for="f-seats">Мест, от</label>
+            <input id="f-seats" type="number" inputmode="numeric" min="1" name="seats_min" value="{{ request.args.get('seats_min', '') }}">
+          </div>
+        </div>
+
+        <div class="sheet-checks">
+          {% for name, label in [('with_driver', 'С водителем'), ('no_driver', 'Без водителя'), ('for_wedding', 'Для свадьбы'), ('delivery', 'Доставка автомобиля'), ('automatic', 'Автоматическая коробка'), ('premium', 'Премиум-класс')] %}
+            <div class="toggle-row">
+              <span>{{ label }}</span>
+              <label class="switch"><input type="checkbox" name="{{ name }}" value="1" {{ 'checked' if request.args.get(name) == '1' }} aria-label="{{ label }}"><span class="switch__track"></span></label>
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="bottom-sheet__actions">
+          <button type="button" class="btn btn-ghost" data-sheet-close>Закрыть</button>
+          <button type="submit" class="btn btn-primary btn-block">Показать</button>
+        </div>
+      </form>
+    </aside>
+
+    <section aria-label="Результаты поиска">
+      {% if cars %}
+        <div id="catalog-grid" class="car-grid">
+          {% include "partials/car_cards.html" %}
+        </div>
+        {% if has_more %}
+          <div class="more-wrap">
+            <a href="{{ next_url }}" class="btn btn-ghost" data-load-more data-next-url="{{ next_url }}">Показать ещё</a>
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="empty-state">
+          <h3>Ничего не нашли</h3>
+          <p>Попробуйте убрать часть фильтров или выбрать другой город. А если нужна конкретная машина — мы поможем подобрать.</p>
+          <div class="row" style="justify-content:center;flex-wrap:wrap;">
+            <a href="{{ url_for('cars.catalog') }}" class="btn btn-ghost">Сбросить фильтры</a>
+            <a href="{{ url_for('cars.help_me_choose') }}" class="btn btn-primary">Подобрать автомобиль</a>
+          </div>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+</div>
+<div class="sheet-backdrop"></div>
+{% endblock %}

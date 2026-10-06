@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Аренда автомобилей в {{ city.name }} — KAVKAZ-CAR{% endblock %}
+{% block description %}Аренда автомобилей в {{ city.name }}: {{ total }} {{ ru_plural(total, 'предложение', 'предложения', 'предложений') }} от владельцев и автопрокатов. Сравните цены и позвоните напрямую.{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="catalog-head">
+    <div>
+      <h1>Аренда автомобилей в {{ city.name }}</h1>
+      <p class="muted-sm" style="margin-top:4px;">{{ city.region }}{% if total %} · {{ total }} {{ ru_plural(total, 'предложение', 'предложения', 'предложений') }}{% endif %}</p>
+    </div>
+    <a href="{{ url_for('cars.catalog', city=city.slug) }}" class="btn btn-ghost btn-sm">Фильтры и сортировка</a>
+  </div>
+
+  {% if cars %}
+    <div class="car-grid" style="margin-top:16px;">
+      {% for car in cars %}{% include "partials/car_card.html" %}{% endfor %}
+    </div>
+    {% if total > cars|length %}
+      <div class="more-wrap"><a href="{{ url_for('cars.catalog', city=city.slug) }}" class="btn btn-ghost">Показать все {{ total }}</a></div>
+    {% endif %}
+  {% else %}
+    <div class="empty-state">
+      <h3>Пока автомобилей в {{ city.name }} нет</h3>
+      <p>Загляните чуть позже или посмотрите предложения из других городов. Сдаёте авто в {{ city.name }}? Разместите первым.</p>
+      <div class="row" style="justify-content:center;flex-wrap:wrap;">
+        <a href="{{ url_for('cars.catalog') }}" class="btn btn-ghost">Смотреть весь Кавказ</a>
+        <a href="{{ url_for('owner.become') if current_user else url_for('auth.register', role='owner') }}" class="btn btn-primary">Разместить автомобиль</a>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

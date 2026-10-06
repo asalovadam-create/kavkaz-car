@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0c0e">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}KAVKAZ-CAR — аренда автомобилей по Северному Кавказу{% endblock %}</title>
+  <meta name="description" content="{% block description %}Аренда автомобилей в Грозном, Махачкале, Владикавказе, Нальчике и других городах Северного Кавказа. Цены и условия видны сразу, звонок владельцу — в одно касание.{% endblock %}">
+  <meta name="robots" content="{% block robots %}index, follow{% endblock %}">
+  <link rel="canonical" href="{% block canonical %}{{ site_url }}{{ request.path }}{% endblock %}">
+  <link rel="icon" type="image/svg+xml" href="{{ static_url('icons/favicon.svg') }}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="KAVKAZ-CAR">
+  <meta property="og:locale" content="ru_RU">
+  <meta property="og:title" content="{% block og_title %}KAVKAZ-CAR — аренда автомобилей на Кавказе{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Найдите автомобиль для своего момента: свадьба, поездка, встреча в аэропорту.{% endblock %}">
+  <meta property="og:url" content="{{ self.canonical() }}">
+  {% block og_image %}{% endblock %}
+  <link rel="stylesheet" href="{{ static_url('css/style.css') }}">
+  {% block head_extra %}{% endblock %}
+</head>
+<body data-authenticated="{{ '1' if current_user else '0' }}" class="{% block body_class %}{% endblock %}">
+  <a class="skip-link" href="#main">Перейти к содержимому</a>
+  {% include "partials/icon_sprite.html" %}
+
+  {% set ep = request.endpoint or '' %}
+  <header class="topnav glass">
+    <div class="container topnav__row">
+      <a href="{{ url_for('main.home') }}" class="logo" aria-label="KAVKAZ-CAR — на главную">
+        <span class="logo__mark" aria-hidden="true"></span>
+        <span class="logo__k">KAVKAZ</span><span class="logo__car">-CAR</span>
+      </a>
+
+      <nav class="nav-links" aria-label="Основное меню">
+        <a href="{{ url_for('cars.catalog') }}" class="{{ 'is-active' if ep in ('cars.catalog', 'cars.car_detail') }}">Каталог</a>
+        <a href="{{ url_for('cars.help_me_choose') }}" class="{{ 'is-active' if ep == 'cars.help_me_choose' }}">Помогите выбрать</a>
+        <a href="{{ url_for('main.home') }}#cities">Города</a>
+        <a href="{{ url_for('payments.pricing') }}" class="{{ 'is-active' if ep == 'payments.pricing' }}">Тарифы</a>
+        {% if current_user and current_user.is_owner %}
+          <a href="{{ url_for('owner.dashboard') }}" class="{{ 'is-active' if ep.startswith('owner.') and ep not in ('owner.profile', 'owner.subscription') }}">Мои авто</a>
+        {% elif current_user %}
+          <a href="{{ url_for('owner.become') }}" class="nav-cta">Сдать авто</a>
+        {% else %}
+          <a href="{{ url_for('auth.register', role='owner') }}" class="nav-cta">Разместить авто</a>
+        {% endif %}
+      </nav>
+
+      <div class="nav-actions">
+        <a href="{{ url_for('cars.favorites') }}" class="icon-btn" aria-label="Избранное">
+          <svg class="icon"><use href="#icon-heart"></use></svg>
+        </a>
+        {% if current_user %}
+          <a href="{{ url_for('owner.profile') }}" class="icon-btn header-profile-btn" aria-label="Профиль">
+            <svg class="icon"><use href="#icon-user"></use></svg>
+          </a>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}" class="btn btn-ghost btn-sm">Войти</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="container" style="padding-top:16px;">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}" role="{{ 'alert' if category == 'error' else 'status' }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="site-footer__cols">
+        <p class="site-footer__disclaimer">
+          KAVKAZ-CAR — информационная платформа для поиска предложений аренды автомобилей.
+          Автомобили размещаются владельцами и автопрокатами самостоятельно. Условия аренды, оплата, залог,
+          страхование и ответственность определяются между клиентом и владельцем автомобиля.
+        </p>
+        <div>
+          <h4>Сайт</h4>
+          <div class="site-footer__links">
+            <a href="{{ url_for('cars.catalog') }}">Каталог</a>
+            <a href="{{ url_for('payments.pricing') }}">Тарифы для владельцев</a>
+            <a href="{{ url_for('main.support') }}">Помощь и контакты</a>
+            <a href="{{ url_for('owner.become') if current_user else url_for('auth.register', role='owner') }}">Я сдаю автомобиль</a>
+          </div>
+        </div>
+        <div>
+          <h4>Документы</h4>
+          <div class="site-footer__links">
+            <a href="{{ url_for('main.terms') }}">Пользовательское соглашение</a>
+            <a href="{{ url_for('main.privacy') }}">Политика конфиденциальности</a>
+            <a href="{{ url_for('main.listing_rules') }}">Правила размещения</a>
+          </div>
+        </div>
+      </div>
+      <p class="site-footer__copy">© {{ current_year }} KAVKAZ-CAR</p>
+    </div>
+  </footer>
+
+  <nav class="bottom-nav glass" aria-label="Нижнее меню">
+    <a href="{{ url_for('main.home') }}" class="bottom-nav__item {{ 'is-active' if ep == 'main.home' }}">
+      <svg class="icon"><use href="#icon-home"></use></svg>Главная
+    </a>
+    <a href="{{ url_for('cars.catalog') }}" class="bottom-nav__item {{ 'is-active' if ep in ('cars.catalog', 'cars.city_page', 'cars.car_detail', 'cars.help_me_choose') }}">
+      <svg class="icon"><use href="#icon-search"></use></svg>Поиск
+    </a>
+    <a href="{{ url_for('cars.favorites') }}" class="bottom-nav__item {{ 'is-active' if ep == 'cars.favorites' }}">
+      <svg class="icon"><use href="#icon-heart"></use></svg>Избранное
+    </a>
+    {% if current_user and current_user.is_owner %}
+      <a href="{{ url_for('owner.dashboard') }}" class="bottom-nav__item {{ 'is-active' if ep.startswith('owner.') and ep not in ('owner.profile',) }}">
+        <svg class="icon"><use href="#icon-car"></use></svg>Мои авто
+      </a>
+    {% else %}
+      <a href="{{ url_for('owner.become') if current_user else url_for('auth.register', role='owner') }}" class="bottom-nav__item {{ 'is-active' if ep == 'owner.become' }}">
+        <svg class="icon"><use href="#icon-plus"></use></svg>Сдать авто
+      </a>
+    {% endif %}
+    <a href="{{ url_for('owner.profile') if current_user else url_for('auth.login') }}" class="bottom-nav__item {{ 'is-active' if ep in ('owner.profile', 'auth.login') }}">
+      <svg class="icon"><use href="#icon-user"></use></svg>{{ 'Профиль' if current_user else 'Войти' }}
+    </a>
+  </nav>
+
+  <div id="compare-bar" class="compare-bar glass" hidden>
+    <span><span data-compare-count>0</span> в сравнении</span>
+    <a data-compare-link href="{{ url_for('cars.compare') }}" class="btn btn-primary btn-sm">Сравнить</a>
+  </div>
+
+  <script src="{{ static_url('js/app.js') }}" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
