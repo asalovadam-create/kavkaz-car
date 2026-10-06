@@ -26,6 +26,19 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 
+def normalize_database_url(url: str) -> str:
+    """Приводит адрес PostgreSQL к явному драйверу psycopg2 (он стоит в requirements.txt).
+
+    Без явного драйвера новые версии SQLAlchemy могут искать psycopg (v3), которого нет,
+    и сайт не стартует с ошибкой "No module named 'psycopg'". Render и Neon также
+    иногда выдают адрес с началом "postgres://". Случайные пробелы и кавычки убираем."""
+    url = (url or "").strip().strip("\"'")
+    for prefix in ("postgres://", "postgresql://", "postgresql+psycopg://", "postgresql+psycopg2://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg2://" + url[len(prefix):]
+    return url
+
+
 class Config:
     # --- Секреты и окружение ---
     SECRET_KEY = os.environ.get("SECRET_KEY", "")
@@ -35,14 +48,9 @@ class Config:
     # --- База данных ---
     # Продакшн: PostgreSQL. Локальная разработка допускает SQLite для удобства,
     # но это НЕ рекомендуется для боевого окружения (см. README).
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'dev.db')}"
+    SQLALCHEMY_DATABASE_URI = normalize_database_url(
+        os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'dev.db')}")
     )
-    # Render иногда отдаёт "postgres://", SQLAlchemy 2.x требует "postgresql://"
-    if SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
-        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace(
-            "postgres://", "postgresql://", 1
-        )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
 

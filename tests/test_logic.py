@@ -98,6 +98,16 @@ class ConfigTests(unittest.TestCase):
         self.assertTrue(config.is_weak_secret("short"))
         self.assertFalse(config.is_weak_secret("f3a9" * 16))
 
+    def test_database_url_normalization(self):
+        n = config.normalize_database_url
+        want = "postgresql+psycopg2://u:p@h/db"
+        self.assertEqual(n("postgres://u:p@h/db"), want)
+        self.assertEqual(n("postgresql://u:p@h/db"), want)
+        self.assertEqual(n("postgresql+psycopg://u:p@h/db"), want)
+        self.assertEqual(n('  "postgresql+psycopg2://u:p@h/db" '), want)
+        self.assertEqual(n("postgresql://u:p@h/db?sslmode=require"), want + "?sslmode=require")
+        self.assertEqual(n("sqlite:///x.db"), "sqlite:///x.db")
+
     def test_admin_secret_placeholder(self):
         self.assertTrue(config.is_placeholder_admin_secret("change-me-too"))
         self.assertTrue(config.is_placeholder_admin_secret(""))
