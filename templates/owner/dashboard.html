@@ -47,6 +47,14 @@
     </div>
   {% endif %}
 
+  {% set expired_count = cars|selectattr('status', 'equalto', 'expired')|list|length %}
+  {% if expired_count %}
+    <div class="notice notice--accent">
+      <span>Приостановлено объявлений: <strong>{{ expired_count }}</strong> — на текущем тарифе их можно держать меньше. Ничего не удалено: после продления тарифа они вернутся в каталог.</span>
+      <a class="btn btn-primary btn-sm" href="{{ url_for('payments.pricing') }}">Продлить тариф</a>
+    </div>
+  {% endif %}
+
   {% if request.args.get('published') %}
     {% set published_car = cars|selectattr('public_id', 'equalto', request.args.get('published'))|first %}
     {% if published_car %}
@@ -92,6 +100,7 @@
             </div>
             <div class="owner-car-row__stats">{{ stat_tail(s, extended_stats) }}</div>
             {% if not extended_stats %}<p class="muted-sm" style="margin-top:4px;"><a class="link-accent" href="{{ url_for('payments.pricing') }}">Статистика по дням и каналам — на PRO</a></p>{% endif %}
+            {% if car.status == 'expired' %}<p class="expired-note">Скрыто из каталога: закончился тариф. Не удалено — вернётся автоматически после продления. <a class="link-accent" href="{{ url_for('payments.pricing') }}">Продлить тариф</a></p>{% endif %}
             {% if car.status == 'blocked' %}<p class="muted-sm" style="margin-top:6px;color:#f2a596;">Объявление заблокировано модератором. Напишите в <a class="link-accent" href="{{ url_for('main.support') }}">поддержку</a>.</p>{% endif %}
           </div>
           <div class="owner-car-row__actions row">

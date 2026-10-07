@@ -25,7 +25,13 @@ class HttpSecurityTests(unittest.TestCase):
         self.client = app.test_client()
 
     def test_post_without_csrf_is_rejected(self):
-        self.assertEqual(self.client.post("/login", data={"phone": "1", "password": "x"}).status_code, 400)
+        # Обычная форма: человека мягко возвращают назад с сообщением, а не показывают страницу ошибки.
+        resp = self.client.post("/login", data={"phone": "1", "password": "x"})
+        self.assertEqual(resp.status_code, 302)
+        # Запрос из JS получает честный JSON с кодом 400.
+        resp = self.client.post("/login", data={}, headers={"X-Requested-With": "XMLHttpRequest"})
+        self.assertEqual(resp.status_code, 400)
+        self.assertTrue(resp.is_json)
 
     def test_page_views_do_not_consume_login_limit(self):
         """Регрессия: раньше 5 открытий страницы входа приводили к 429."""
@@ -73,10 +79,61 @@ class HttpSecurityTests(unittest.TestCase):
         self.assertEqual(resp.status_code, 404)
         self.assertTrue(resp.is_json)
 
-    def test_admin_area_redirects_anonymous(self):
-        resp = self.client.get("/admin/")
+    def test_admin_is_not_at_the_obvious_address(self):
+        """/admin и /admin/login отвечают обычной 404 — никто не узнает, что админка существует."""
+        for path in ("/admin", "/admin/", "/admin/login", "/administrator", "/admin/users"):
+            resp = self.client.get(path)
+            self.assertEqual(resp.status_code, 404, path)
+            self.assertNotIn("admin", resp.get_data(as_text=True).lower().replace("kavkaz", ""), path)
+
+    def test_admin_lives_on_secret_prefix_and_anonymous_is_sent_to_login(self):
+        prefix = app.config["ADMIN_PREFIX"]
+        self.assertNotIn(prefix, ("/admin", "/administrator"))
+        resp = self.client.get(prefix + "/")
         self.assertEqual(resp.status_code, 302)
-        self.assertIn("/admin/login", resp.headers["Location"])
+        self.assertTrue(resp.headers["Location"].endswith(prefix + "/login"))
+        self.assertEqual(self.client.get(prefix + "/login").status_code, 200)
+
+    def test_robots_does_not_reveal_admin(self):
+        body = self.client.get("/robots.txt").get_data(as_text=True).lower()
+        self.assertNotIn("admin", body)
+        self.assertNotIn(app.config["ADMIN_PREFIX"].lower(), body)
+
+    def test_error_pages_are_noindex(self):
+        html = self.client.get("/definitely-not-a-page").get_data(as_text=True)
+        self.assertIn('content="noindex, nofollow"', html)
+        self.assertNotIn("definitely-not-a-page", html)  # адрес не отражается в canonical/og:url
+
+    def test_admin_and_site_use_separate_cookies(self):
+        """Регрессия: вход в админку больше не стирает клиентский вход и наоборот."""
+        prefix = app.config["ADMIN_PREFIX"]
+        site = self.client.get("/login")
+        admin = self.client.get(prefix + "/login")
+        site_cookie = next(c for c in site.headers.getlist("Set-Cookie"))
+        admin_cookie = next(c for c in admin.headers.getlist("Set-Cookie"))
+        self.assertTrue(site_cookie.startswith("session="))
+        self.assertTrue(admin_cookie.startswith("kc_adm="))
+        self.assertIn(f"Path={prefix}", admin_cookie)
+        self.assertIn("SameSite=Strict", admin_cookie)
+        self.assertIn("HttpOnly", admin_cookie)
+
+    def test_visiting_admin_does_not_invalidate_site_csrf_token(self):
+        import re
+        html = self.client.get("/register").get_data(as_text=True)
+        token = re.search(r'name="csrf-token" content="([0-9a-f]+)"', html).group(1)
+        self.client.get(app.config["ADMIN_PREFIX"] + "/login")  # заходим в админку в той же «вкладке»/браузере
+        resp = self.client.post("/register", data={"csrf_token": token})
+        self.assertEqual(resp.status_code, 400)  # дошло до проверки полей формы, а не «сессия устарела» (302)
+
+    def test_admin_ip_allowlist_returns_plain_404(self):
+        prefix = app.config["ADMIN_PREFIX"]
+        app.config["ADMIN_ALLOWED_IPS"] = ["203.0.113.77"]
+        try:
+            self.assertEqual(self.client.get(prefix + "/login").status_code, 404)
+            ok = self.client.get(prefix + "/login", environ_overrides={"REMOTE_ADDR": "203.0.113.77"})
+            self.assertEqual(ok.status_code, 200)
+        finally:
+            app.config["ADMIN_ALLOWED_IPS"] = []
 
     def test_forged_session_cookie_is_useless(self):
         """Cookie с user_id, но без токена сессии (uv), не даёт доступа к кабинету.
@@ -88,7 +145,7 @@ class HttpSecurityTests(unittest.TestCase):
 
     def test_robots_hides_private_areas(self):
         body = self.client.get("/robots.txt").get_data(as_text=True)
-        for path in ("/owner/", "/admin/", "/orders/", "/payments/"):
+        for path in ("/owner/", "/orders/", "/payments/"):
             self.assertIn(f"Disallow: {path}", body)
 
 

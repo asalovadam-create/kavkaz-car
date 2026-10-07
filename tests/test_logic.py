@@ -114,6 +114,47 @@ class ConfigTests(unittest.TestCase):
         self.assertFalse(config.is_placeholder_admin_secret("my-real-long-admin-code"))
 
 
+class AdminSecurityTests(unittest.TestCase):
+    def test_totp_matches_rfc6238_vectors(self):
+        import base64
+        import totp
+        secret = base64.b32encode(b"12345678901234567890").decode().rstrip("=")
+        self.assertEqual(totp.code_at(secret, 59), "287082")
+        self.assertEqual(totp.code_at(secret, 1111111109), "081804")
+
+    def test_totp_verify_window_and_garbage(self):
+        import totp
+        secret = totp.generate_secret()
+        now = 1_700_000_000
+        self.assertTrue(totp.verify(secret, totp.code_at(secret, now), now))
+        self.assertTrue(totp.verify(secret, totp.code_at(secret, now - 30), now))      # телефон отстаёт на шаг
+        self.assertFalse(totp.verify(secret, totp.code_at(secret, now - 120), now))    # старый код
+        for bad in ("", None, "12345", "abcdef", "1234567"):
+            self.assertFalse(totp.verify(secret, bad, now))
+        self.assertFalse(totp.verify(None, "123456", now))
+
+    def test_admin_prefix_is_never_guessable(self):
+        for configured in ("", "/admin", "admin", "/administrator", "/x", "/with space"):
+            self.assertNotIn(config.admin_prefix("k" * 48, configured), ("/admin", "/administrator", "/login"))
+        self.assertEqual(config.admin_prefix("k" * 48, "/ctl-k8f3a9x2q7"), "/ctl-k8f3a9x2q7")
+        self.assertNotEqual(config.admin_prefix("a" * 48), config.admin_prefix("b" * 48))
+
+
+class FreshnessTests(unittest.TestCase):
+    def test_paid_plan_is_not_mentioned_publicly(self):
+        from types import SimpleNamespace as NS
+        from datetime import datetime
+        import services
+        paid = NS(owner=NS(current_plan=lambda: "business"), last_confirmed_at=datetime.utcnow())
+        text, ok = services.freshness_label(paid)
+        self.assertIsNone(text)
+        self.assertTrue(ok)
+        free = NS(owner=NS(current_plan=lambda: "free"), last_confirmed_at=datetime.utcnow())
+        self.assertIn("подтверждена сегодня", services.freshness_label(free)[0])
+        for plan_word in ("PRO", "BUSINESS", "тариф"):
+            self.assertNotIn(plan_word.lower(), services.freshness_label(free)[0].lower())
+
+
 class SearchTests(unittest.TestCase):
     def test_synonyms_expand_with_or_inside_group(self):
         import services

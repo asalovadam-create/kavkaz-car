@@ -344,6 +344,15 @@ def activate_plan(user, plan: str, days: int, *, provider: str, transaction_id: 
     )
     db.session.add(subscription)
     user.invalidate_plan_cache()
+    if plan != "free":
+        until = f" до {expires_at:%d.%m.%Y}" if expires_at else ""
+        notify_user(user.id, f"Тариф {PLANS[plan]['name']} активирован{until}",
+                    "Новые возможности уже доступны в кабинете.", kind="plan", link="/owner/subscription")
+        restored = restore_expired_cars(user)
+        if restored:
+            notify_user(user.id, f"Возвращено в каталог объявлений: {restored}",
+                        "Объявления, приостановленные после окончания прошлого тарифа, снова опубликованы.",
+                        kind="car", link="/owner/dashboard")
     return subscription
 
 
@@ -364,6 +373,138 @@ def redeem_promo_code(promo, user):
     return activate_plan(
         user, promo.plan, promo.duration_days, provider="promo_code", promo_code_id=promo.id,
     )
+
+
+# ---------------------------------------------------------------------------
+# Уведомления пользователям
+# ---------------------------------------------------------------------------
+
+def notify_user(user_id: int, title: str, body: str = "", *, kind: str = "system", link: str | None = None) -> None:
+    """Кладёт уведомление в «колокольчик» пользователя. Commit делает вызывающий."""
+    from models import Notification, db
+    db.session.add(Notification(user_id=user_id, kind=kind, title=title[:160], body=body or None, link=link))
+
+
+# ---------------------------------------------------------------------------
+# Что происходит с объявлениями, когда тариф заканчивается
+# ---------------------------------------------------------------------------
+
+LIVE_STATUSES = ("published", "paused", "pending")
+
+
+def enforce_plan_limits(user) -> int:
+    """Приостанавливает объявления сверх лимита ТЕКУЩЕГО тарифа (ничего не удаляет).
+
+    Остаются самые ранние объявления — их столько, сколько разрешает тариф (на бесплатном — 1).
+    Более поздние (созданные уже под платный тариф) получают статус «expired» и пропадают из
+    каталога. Вернуть их можно, продлив тариф: см. restore_expired_cars. Возвращает, сколько
+    объявлений приостановлено. Commit делает вызывающий."""
+    from models import Car
+
+    limit = plan_limits(user.current_plan())["max_cars"]
+    live = (
+        Car.query.filter(Car.owner_id == user.id, Car.status.in_(LIVE_STATUSES))
+        .order_by(Car.created_at.asc(), Car.id.asc()).all()
+    )
+    changed = 0
+    for car in live[limit:]:
+        car.status = "expired"
+        changed += 1
+    return changed
+
+
+def restore_expired_cars(user) -> int:
+    """После покупки тарифа возвращает приостановленные объявления (самые ранние — первыми),
+    пока хватает лимита нового тарифа."""
+    from models import Car
+
+    limit = plan_limits(user.current_plan())["max_cars"]
+    live = Car.query.filter(Car.owner_id == user.id, Car.status.in_(LIVE_STATUSES)).count()
+    room = max(0, limit - live)
+    if room == 0:
+        return 0
+    expired = (
+        Car.query.filter_by(owner_id=user.id, status="expired")
+        .order_by(Car.created_at.asc(), Car.id.asc()).limit(room).all()
+    )
+    for car in expired:
+        car.status = "published"
+    return len(expired)
+
+
+def sweep_expired_subscriptions() -> int:
+    """Находит подписки, срок которых вышел, закрывает их и приостанавливает лишние объявления.
+    Вызывается из приложения не чаще раза в минуту (см. app.py) — отдельный планировщик не нужен.
+    Возвращает число обработанных владельцев."""
+    from models import Subscription, User, db
+
+    now = datetime.utcnow()
+    due = (
+        Subscription.query.filter(
+            Subscription.status == "active", Subscription.plan != "free",
+            Subscription.expires_at.isnot(None), Subscription.expires_at <= now,
+        ).all()
+    )
+    owners = set()
+    for sub in due:
+        sub.status = "expired"
+        owners.add(sub.owner_id)
+    for owner_id in owners:
+        user = db.session.get(User, owner_id)
+        if user is None:
+            continue
+        user.invalidate_plan_cache()
+        paused = enforce_plan_limits(user)
+        if user.current_plan() == "free":
+            body = (f"Приостановлено объявлений: {paused}. Они не удалены — вернутся в каталог после продления тарифа."
+                    if paused else "Ваши объявления остаются в каталоге в пределах бесплатного тарифа.")
+            notify_user(user.id, "Тариф закончился", body, kind="plan", link="/pricing")
+    if owners:
+        db.session.commit()
+    return len(owners)
+
+
+# ---------------------------------------------------------------------------
+# Настройки сайта, которые админ редактирует из панели
+# ---------------------------------------------------------------------------
+
+_settings_cache: dict = {"at": 0.0, "data": {}}
+SETTING_KEYS = (
+    "support_phone", "support_telegram", "support_whatsapp",
+    "founder_name", "founder_role", "founder_bio", "founder_links",
+)
+
+
+def get_settings() -> dict:
+    """Все настройки одним запросом, с кэшем на 60 секунд (не нагружает базу на каждый показ страницы)."""
+    import time
+    from models import SiteSetting
+
+    if time.time() - _settings_cache["at"] < 60:
+        return _settings_cache["data"]
+    try:
+        data = {row.key: row.value for row in SiteSetting.query.all()}
+    except Exception:
+        from models import db
+        db.session.rollback()
+        data = _settings_cache["data"]
+    _settings_cache.update(at=time.time(), data=data)
+    return data
+
+
+def save_settings(values: dict) -> None:
+    from models import SiteSetting, db
+
+    for key, value in values.items():
+        if key not in SETTING_KEYS:
+            continue
+        row = db.session.get(SiteSetting, key)
+        if row is None:
+            db.session.add(SiteSetting(key=key, value=value))
+        else:
+            row.value = value
+    db.session.commit()
+    _settings_cache["at"] = 0.0  # сбросить кэш
 
 
 # ---------------------------------------------------------------------------
@@ -453,11 +594,12 @@ def rank_cars(cars: list, sort: str | None = "recommended") -> list:
     return sorted(cars, key=sort_key_for_catalog)
 
 
-def freshness_label(car) -> tuple[str, bool]:
-    """Честная подпись актуальности: (текст, всё_хорошо)."""
-    days = (datetime.utcnow() - car.last_confirmed_at).days
+def freshness_label(car):
+    """Подпись актуальности для публичной страницы: (текст | None, всё_хорошо).
+    Тариф владельца публично НЕ упоминается; для платных тарифов подпись не показываем."""
     if car.owner.current_plan() != "free":
-        return "Владелец на тарифе " + car.owner.current_plan().upper(), True
+        return None, True
+    days = (datetime.utcnow() - car.last_confirmed_at).days
     if days <= 0:
         return "Актуальность подтверждена сегодня", True
     if days == 1:

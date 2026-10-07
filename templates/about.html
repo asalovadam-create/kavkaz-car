@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}О проекте KAVKAZ-CAR{% if name %} — {{ name }}{% endif %}{% endblock %}
+{% block description %}KAVKAZ-CAR — платформа аренды автомобилей на Северном Кавказе.{% if name %} Основатель проекта — {{ name }}.{% endif %}{% endblock %}
+{% block canonical %}{{ site_url }}{{ url_for('main.about') }}{% endblock %}
+{% block head_extra %}<script type="application/ld+json">{{ jsonld | tojson }}</script>{% endblock %}
+
+{% block content %}
+<div class="container page" style="max-width:760px;">
+  <h1 class="page-title">О проекте KAVKAZ-CAR</h1>
+  <p class="page-lead">Мы собираем в одном месте автомобили владельцев и автопрокатов Северного Кавказа: цены и условия видны сразу, а позвонить владельцу можно в одно касание.</p>
+
+  {% if name %}
+    <section class="card" aria-labelledby="founder">
+      <h2 id="founder" style="font-size:20px;margin-bottom:4px;">{{ name }}</h2>
+      {% if role %}<p class="muted-sm" style="margin-bottom:10px;">{{ role }}</p>{% endif %}
+      {% if bio %}<p class="text-muted pre-line">{{ bio }}</p>{% endif %}
+      {% if links %}
+        <p class="muted-sm" style="margin-top:14px;">Официальные страницы:</p>
+        <div class="contact-list">
+          {% for url in links %}<a class="link-accent" href="{{ url }}" target="_blank" rel="noopener me">{{ url|replace('https://', '')|replace('www.', '') }}</a>{% endfor %}
+        </div>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  <div class="section-heading"><h2>Связаться</h2></div>
+  <p class="text-muted">По вопросам размещения, тарифов и сотрудничества — <a class="link-accent" href="{{ url_for('main.support') }}">страница помощи и контактов</a>.</p>
+</div>
+{% endblock %}

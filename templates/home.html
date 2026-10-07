@@ -5,7 +5,7 @@
 {% block content %}
 <section class="hero container">
   <h1>Найди автомобиль<br>для своего момента</h1>
-  <p class="hero__lead">Свадьба, поездка, встреча в аэропорту. Цена и условия видны сразу, а позвонить владельцу можно одним касанием.</p>
+  <p class="hero__lead">Свадьба, поездка, аэропорт. Цены и условия видны сразу — звоните владельцу в одно касание.</p>
 
   <form class="compact-search glass" action="{{ url_for('cars.catalog') }}" method="get" role="search">
     <svg class="icon" style="color:var(--text-tertiary);" aria-hidden="true"><use href="#icon-search"></use></svg>
@@ -13,13 +13,10 @@
     <input id="home-q" name="q" type="search" placeholder="Марка, модель или город" autocomplete="off">
     <button type="submit" class="btn btn-primary btn-sm">Найти</button>
   </form>
-  <div class="hero-links">
-    <a href="{{ url_for('cars.catalog') }}">Все фильтры: город, бюджет, кузов</a>
-    <a href="{{ url_for('cars.help_me_choose') }}">Не знаете, что выбрать? Подберём</a>
-  </div>
+  <a class="hero-cta" href="{{ url_for('cars.help_me_choose') }}">Не знаете, что выбрать? Подберём за минуту →</a>
 
+  <p class="event-label">Для чего нужна машина?</p>
   <div class="event-picker" role="list">
-    <span class="text-muted" style="align-self:center; font-size:13px; padding-right:4px;">Для чего нужна машина?</span>
     {% for value, label in event_types %}
       <a href="{{ url_for('cars.help_me_choose', event=value) }}" class="event-chip" role="listitem">{{ label }}</a>
     {% endfor %}

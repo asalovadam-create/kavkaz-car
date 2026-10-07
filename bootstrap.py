@@ -18,6 +18,7 @@ from models import City, OwnerProfile, db, _short_id
 # (таблица, колонка, DDL типа) — колонки, добавленные после первого релиза.
 ADDITIVE_COLUMNS = [
     ("owner_profiles", "public_id", "VARCHAR(12)"),
+    ("admin_users", "totp_secret", "VARCHAR(64)"),
 ]
 
 

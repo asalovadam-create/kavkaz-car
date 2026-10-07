@@ -24,7 +24,7 @@
     {% elif order.status == 'awaiting_manual' %}
       <span class="pill pill--warn">Ждёт подтверждения оплаты</span>
       <div class="order-total" style="margin-top:10px;">{{ '{:,}'.format(order.amount).replace(',', ' ') }} ₽</div>
-      <p class="text-muted" style="margin:8px 0;">Заявка принята. Свяжитесь с нами, назвав номер заказа <strong>{{ order.public_id|upper }}</strong>, — подскажем, как оплатить, и сразу включим тариф.</p>
+      <p class="text-muted" style="margin:8px 0;"><strong>Чтобы оплатить и включить тариф, свяжитесь с поддержкой.</strong> Назовите номер заказа <strong>{{ order.public_id|upper }}</strong> — подскажем, как оплатить, и сразу включим тариф.</p>
       <div class="contact-list">
         {% if support_telegram %}<a class="btn btn-primary" href="https://t.me/{{ support_telegram.lstrip('@').split('/')[-1] }}" target="_blank" rel="noopener">Написать в Telegram</a>{% endif %}
         {% if support_whatsapp %}<a class="btn btn-ghost" href="https://wa.me/{{ support_whatsapp | replace('+', '') | replace(' ', '') }}?text=Заказ%20{{ order.public_id|upper }}" target="_blank" rel="noopener">Написать в WhatsApp</a>{% endif %}

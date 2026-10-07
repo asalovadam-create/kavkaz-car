@@ -321,6 +321,7 @@ class AdminUser(db.Model):
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     last_login_at = db.Column(db.DateTime, nullable=True)
+    totp_secret = db.Column(db.String(64), nullable=True)  # секрет 2FA; пусто = 2FA выключена
 
     def session_token(self) -> str:
         """Как User.session_token: сессия админа привязана к его паролю, поэтому
@@ -421,3 +422,28 @@ class PaymentOrder(db.Model):
     def status_label(self) -> str:
         from config import ORDER_STATUS_LABELS
         return ORDER_STATUS_LABELS.get(self.status, self.status)
+
+
+class Notification(db.Model):
+    """Уведомление пользователю: сообщения администрации и её действия по его аккаунту
+    (смена тарифа, статус объявления, окончание подписки). Показывается в «колокольчике»."""
+
+    __tablename__ = "notifications"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    kind = db.Column(db.String(20), nullable=False, default="system")  # admin | plan | car | system
+    title = db.Column(db.String(160), nullable=False)
+    body = db.Column(db.Text, nullable=True)
+    link = db.Column(db.String(255), nullable=True)
+    is_read = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
+class SiteSetting(db.Model):
+    """Настройки сайта, которые админ меняет из панели (контакты поддержки, данные об основателе)."""
+
+    __tablename__ = "site_settings"
+
+    key = db.Column(db.String(60), primary_key=True)
+    value = db.Column(db.Text, nullable=False, default="")

@@ -24,6 +24,8 @@
     </div>
   {% endif %}
 
+  <a href="{{ url_for('main.notifications') }}" class="btn btn-ghost btn-block" style="margin-top:12px;">Уведомления{% if unread_notifications %} · {{ unread_notifications }} новых{% endif %}</a>
+
   <hr class="divider">
   <h2 style="font-size:17px;margin-bottom:14px;">{{ 'Данные владельца' if current_user.is_owner else 'Ваши данные' }}</h2>
 

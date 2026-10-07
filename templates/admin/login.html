@@ -21,6 +21,7 @@
       {% if needs_secret %}
         <div class="field"><label for="secret">Секретный код</label><input id="secret" name="secret" type="password" autocomplete="off" required></div>
       {% endif %}
+      <div class="field"><label for="code">Код из приложения <span class="text-muted">(если включён)</span></label><input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8"></div>
       <button type="submit" class="btn btn-primary btn-block">Войти</button>
     </form>
   </div>

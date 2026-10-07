@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Уведомления — KAVKAZ-CAR{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<div class="page-narrow">
+  <h1 class="page-title">Уведомления</h1>
+  <p class="page-lead" style="margin-bottom:16px;">Здесь — сообщения от администрации и всё, что происходит с вашим аккаунтом: тариф, статус объявлений.</p>
+
+  {% if items %}
+    <div class="notif-list">
+      {% for n in items %}
+        {% set tag = {'admin': 'От администрации', 'plan': 'Тариф', 'car': 'Объявление', 'system': 'Сообщение'}.get(n.kind, 'Сообщение') %}
+        <{{ 'a' if n.link else 'div' }} class="notif {{ 'is-new' if n.id in unread_ids }}" {% if n.link %}href="{{ n.link }}"{% endif %}>
+          <span class="notif__tag {{ 'notif__tag--admin' if n.kind == 'admin' }}">{{ tag }}</span>
+          <div class="notif__head"><span class="notif__title">{{ n.title }}</span><span class="notif__time">{{ n.created_at|ru_datetime }}</span></div>
+          {% if n.body %}<p class="notif__body">{{ n.body }}</p>{% endif %}
+        </{{ 'a' if n.link else 'div' }}>
+      {% endfor %}
+    </div>
+    <form method="post" action="{{ url_for('main.notifications_clear') }}" style="margin-top:18px;" data-confirm="Удалить прочитанные уведомления?">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-ghost btn-sm">Очистить прочитанные</button>
+    </form>
+  {% else %}
+    <div class="empty-state"><h3>Пока ничего нет</h3><p>Когда администрация напишет вам или изменит что-то в аккаунте, вы увидите это здесь. Колокольчик в шапке покажет число новых.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

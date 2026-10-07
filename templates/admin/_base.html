@@ -35,6 +35,7 @@
         <a href="{{ url_for('admin_panel.cars') }}" class="{{ 'is-active' if ep == 'admin_panel.cars' }}">Автомобили</a>
         <a href="{{ url_for('admin_panel.reports') }}" class="{{ 'is-active' if ep == 'admin_panel.reports' }}">Жалобы</a>
         <a href="{{ url_for('admin_panel.promo_codes') }}" class="{{ 'is-active' if ep == 'admin_panel.promo_codes' }}">Промокоды</a>
+        <a href="{{ url_for('admin_panel.settings') }}" class="{{ 'is-active' if ep == 'admin_panel.settings' }}">Настройки сайта</a>
         <a href="{{ url_for('admin_panel.logs') }}" class="{{ 'is-active' if ep == 'admin_panel.logs' }}">Журнал действий</a>
       </nav>
       <div style="min-width:0;">{% block admin_content %}{% endblock %}</div>

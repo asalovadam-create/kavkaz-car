@@ -5,12 +5,9 @@
     {% if photo %}
       <img src="{{ photo.thumbnail_url or photo.url }}" alt="{{ car.title() }}" loading="lazy" width="400" height="300">
     {% else %}
-      <div class="skeleton" style="width:100%;height:100%;"></div>
+      <div class="car-card__noimg"><svg class="icon"><use href="#icon-car"></use></svg><span>Фото скоро появится</span></div>
     {% endif %}
     {% if car.is_boosted() %}<span class="car-card__status">В топе</span>{% endif %}
-    {% if plan_key != 'free' %}
-      <span class="badge car-card__plan {{ 'badge-business' if plan_key == 'business' else 'badge-pro' }}">{{ plans[plan_key].name }}</span>
-    {% endif %}
   </a>
   <button type="button" class="car-card__fav {{ 'is-active' if car.public_id in fav_ids }}" data-fav-toggle="{{ car.public_id }}" aria-label="В избранное" style="background:rgba(0,0,0,0.45);">
     <svg class="icon fav-off"><use href="#icon-heart"></use></svg><svg class="icon fav-on"><use href="#icon-heart-filled"></use></svg>

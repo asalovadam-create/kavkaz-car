@@ -9,18 +9,44 @@ import logging
 import os
 from datetime import datetime, timedelta
 
-from flask import Flask, g, jsonify, render_template, request, session, url_for
+from flask import Flask, abort, g, jsonify, render_template, request, session, url_for
+from flask.sessions import SecureCookieSessionInterface
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import (
-    Config, ORDER_STATUS_LABELS, PLANS, STATUS_LABELS, is_placeholder_admin_secret, is_weak_secret,
+    Config, ORDER_STATUS_LABELS, PLANS, STATUS_LABELS, admin_prefix, is_placeholder_admin_secret,
+    is_weak_secret,
 )
-from models import AdminUser, Car, Favorite, User, db
+from models import AdminUser, Car, Favorite, Notification, User, db
 from security import (
     apply_security_headers, csrf_protect, get_csrf_token, wants_json,
 )
 from services import format_price
 from validators import format_phone, ru_plural
+
+class SplitSessionInterface(SecureCookieSessionInterface):
+    """Админка и сайт используют РАЗНЫЕ cookie.
+
+    Раньше у них была одна общая cookie «session»: вход в админку стирал клиентский вход
+    (и наоборот), а форма в соседней вкладке получала «Сессия устарела». Теперь cookie
+    админки называется иначе, действует только на секретном адресе админки и только
+    для переходов с этого же сайта (SameSite=Strict)."""
+
+    ADMIN_COOKIE = "kc_adm"
+
+    def _is_admin_request(self, app) -> bool:
+        prefix = app.config.get("ADMIN_PREFIX", "")
+        return bool(prefix) and (request.path == prefix or request.path.startswith(prefix + "/"))
+
+    def get_cookie_name(self, app):
+        return self.ADMIN_COOKIE if self._is_admin_request(app) else super().get_cookie_name(app)
+
+    def get_cookie_path(self, app):
+        return app.config["ADMIN_PREFIX"] if self._is_admin_request(app) else super().get_cookie_path(app)
+
+    def get_cookie_samesite(self, app):
+        return "Strict" if self._is_admin_request(app) else super().get_cookie_samesite(app)
+
 
 def config_warnings(app: Flask) -> list[str]:
     """Что в настройках небезопасно или не доделано. Показывается в админке."""
@@ -39,6 +65,17 @@ def config_warnings(app: Flask) -> list[str]:
         warnings.append("FORCE_HTTPS выключен: cookie сессии могут передаваться без шифрования.")
     if is_placeholder_admin_secret(app.config.get("ADMIN_SECRET")):
         warnings.append("ADMIN_SECRET не задан или остался из примера — вход в админку защищён только паролем.")
+    from services import get_settings
+    saved = get_settings() if app.config.get("_BOOTSTRAPPED") else {}
+    if not (saved.get("support_telegram") or saved.get("support_whatsapp") or saved.get("support_phone")
+            or app.config.get("SUPPORT_TELEGRAM") or app.config.get("SUPPORT_WHATSAPP") or app.config.get("SUPPORT_PHONE")):
+        warnings.append("Не указаны контакты поддержки — клиенты не смогут связаться при покупке тарифа. "
+                        "Заполните их в админке: «Настройки сайта».")
+    if not app.config.get("ADMIN_PATH"):
+        warnings.append("Секретный адрес админки вычислен автоматически. Задайте свой в переменной ADMIN_PATH "
+                        "(например /ctl-k8f3a9x2q7), чтобы его знали только вы.")
+    if not app.config.get("ADMIN_ALLOWED_IPS"):
+        warnings.append("Вход в админку не ограничен по IP (ADMIN_ALLOWED_IPS). Если у вас статичный IP — задайте его.")
     if app.config.get("PAYMENT_PROVIDER") == "manual":
         warnings.append("Онлайн-оплата не подключена: тарифы оплачиваются по заявке и подтверждаются вручную.")
     if app.config.get("PAYMENT_PROVIDER") == "rollypay" and not app.config.get("ROLLYPAY_SECRET"):
@@ -79,6 +116,9 @@ def create_app(config_object: type = Config) -> Flask:
     if proxies:
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=proxies, x_proto=proxies, x_host=0, x_prefix=0)
 
+    app.config["ADMIN_PREFIX"] = admin_prefix(app.config["SECRET_KEY"], app.config.get("ADMIN_PATH", ""))
+    app.session_interface = SplitSessionInterface()
+
     db.init_app(app)
 
     from flask_migrate import Migrate
@@ -96,7 +136,15 @@ def create_app(config_object: type = Config) -> Flask:
     app.register_blueprint(cars_bp)
     app.register_blueprint(owner_bp)
     app.register_blueprint(payments_bp)
-    app.register_blueprint(admin_bp)
+    prefix = app.config["ADMIN_PREFIX"]
+    app.register_blueprint(admin_bp, url_prefix=prefix)
+    # Вход/выход админа живут на секретном адресе. Имена endpoint сохранены (auth.admin_login),
+    # поэтому url_for(...) в коде и шаблонах не изменился.
+    import auth as auth_module
+    app.add_url_rule(f"{prefix}/login", endpoint="auth.admin_login", view_func=auth_module.admin_login,
+                     methods=["GET", "POST"])
+    app.add_url_rule(f"{prefix}/logout", endpoint="auth.admin_logout", view_func=auth_module.admin_logout,
+                     methods=["POST"])
 
     app.config["ASSET_VERSION"] = _asset_version()
 
@@ -106,21 +154,52 @@ def create_app(config_object: type = Config) -> Flask:
     _register_cli(app)
     _configure_logging(app)
 
-    if not app.debug:
-        for warning in config_warnings(app):
-            if "SECRET_KEY" in warning:
-                app.logger.critical(warning)
-            else:
-                app.logger.warning(warning)
-
     if app.config.get("AUTO_BOOTSTRAP", True):
         from bootstrap import ensure_schema
         ensure_schema(app)
+        app.config["_BOOTSTRAPPED"] = True
+
+    if not app.debug:
+        app.logger.warning("Адрес админки: %s%s/login (покажите его только тем, кому доверяете)",
+                           app.config["SITE_URL"], prefix)
+        with app.app_context():
+            for warning in config_warnings(app):
+                if "SECRET_KEY" in warning:
+                    app.logger.critical(warning)
+                else:
+                    app.logger.warning(warning)
 
     return app
 
 
+_last_sweep = {"at": 0.0}
+
+
 def _register_hooks(app: Flask) -> None:
+    @app.before_request
+    def restrict_admin_area():
+        """Если задан список разрешённых IP, остальным админка отвечает обычной 404 —
+        словно такой страницы нет."""
+        allowed = app.config.get("ADMIN_ALLOWED_IPS")
+        prefix = app.config["ADMIN_PREFIX"]
+        if allowed and (request.path == prefix or request.path.startswith(prefix + "/")):
+            if (request.remote_addr or "") not in allowed:
+                abort(404)
+
+    @app.before_request
+    def sweep_expired():
+        """Раз в минуту закрывает истёкшие подписки и приостанавливает лишние объявления."""
+        import time
+        if request.endpoint == "static" or time.time() - _last_sweep["at"] < 60:
+            return
+        _last_sweep["at"] = time.time()
+        try:
+            from services import sweep_expired_subscriptions
+            sweep_expired_subscriptions()
+        except Exception:  # проверка не должна ронять страницу пользователя
+            db.session.rollback()
+            app.logger.exception("Не удалось проверить истёкшие подписки")
+
     @app.before_request
     def load_current_user():
         g.current_user = None
@@ -160,7 +239,7 @@ def _register_hooks(app: Flask) -> None:
 
     @app.before_request
     def check_csrf():
-        csrf_protect()
+        return csrf_protect()
 
     @app.after_request
     def set_security_headers(response):
@@ -243,6 +322,20 @@ def _register_template_globals(app: Flask) -> None:
             except Exception:  # страница ошибки не должна падать из-за избранного
                 db.session.rollback()
 
+        unread = 0
+        if user is not None:
+            try:
+                unread = Notification.query.filter_by(user_id=user.id, is_read=False).count()
+            except Exception:
+                db.session.rollback()
+
+        from services import get_settings
+        saved = get_settings()
+        cfg = app.config
+
+        def contact(key, env_key):
+            return (saved.get(key) or cfg.get(env_key) or "").strip()
+
         return dict(
             csrf_token=get_csrf_token,
             format_price=format_price,
@@ -252,14 +345,16 @@ def _register_template_globals(app: Flask) -> None:
             static_url=static_url,
             now_ts=datetime.utcnow().timestamp(),
             current_year=datetime.utcnow().year,
-            site_url=app.config["SITE_URL"],
-            support_phone=app.config.get("SUPPORT_PHONE", ""),
-            support_telegram=app.config.get("SUPPORT_TELEGRAM", ""),
-            support_whatsapp=app.config.get("SUPPORT_WHATSAPP", ""),
+            site_url=cfg["SITE_URL"],
+            support_phone=contact("support_phone", "SUPPORT_PHONE"),
+            support_telegram=contact("support_telegram", "SUPPORT_TELEGRAM"),
+            support_whatsapp=contact("support_whatsapp", "SUPPORT_WHATSAPP"),
+            founder_name=saved.get("founder_name", "").strip(),
             ru_plural=ru_plural,
             status_labels=STATUS_LABELS,
             order_status_labels=ORDER_STATUS_LABELS,
             fav_ids=fav_ids,
+            unread_notifications=unread,
         )
 
 
@@ -318,6 +413,44 @@ def _register_cli(app: Flask) -> None:
         admin.password_hash = hash_password(password)
         db.session.commit()
         print("Пароль обновлён.")
+
+    @app.cli.command("enable-admin-2fa")
+    def enable_admin_2fa():
+        """Включает двухфакторный вход для администратора (приложение-аутентификатор).
+        Использование: flask --app app.py enable-admin-2fa
+        """
+        import totp
+
+        username = input("Логин администратора: ").strip()
+        admin = AdminUser.query.filter_by(username=username).first()
+        if not admin:
+            print("Такого администратора нет.")
+            return
+        secret = totp.generate_secret()
+        print("\nОткройте Google Authenticator / Authy → «Добавить» → «Ввести ключ настройки» и введите:")
+        print(f"   Название: KAVKAZ-CAR   Ключ: {secret}   Тип: по времени")
+        print(f"\n(или ссылка для приложений, понимающих otpauth: {totp.otpauth_uri(secret, username)})")
+        code = input("\nВведите 6-значный код из приложения для подтверждения: ").strip()
+        if not totp.verify(secret, code):
+            print("Код не подошёл — 2FA НЕ включена. Проверьте время на телефоне и повторите.")
+            return
+        admin.totp_secret = secret
+        db.session.commit()
+        print("Готово: теперь при входе в админку потребуется код из приложения.")
+
+    @app.cli.command("disable-admin-2fa")
+    def disable_admin_2fa():
+        """Выключает 2FA у администратора (если потерян телефон).
+        Использование: flask --app app.py disable-admin-2fa
+        """
+        username = input("Логин администратора: ").strip()
+        admin = AdminUser.query.filter_by(username=username).first()
+        if not admin:
+            print("Такого администратора нет.")
+            return
+        admin.totp_secret = None
+        db.session.commit()
+        print("2FA выключена.")
 
 
 def _configure_logging(app: Flask) -> None:

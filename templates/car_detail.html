@@ -50,7 +50,6 @@
         <h1>{{ car.title() }}</h1>
         <div class="car-card__meta">
           <svg class="icon" style="width:14px;height:14px;"><use href="#icon-location"></use></svg>{{ car.city.name }}
-          {% if plan_key != 'free' %}&nbsp;<span class="badge {{ 'badge-business' if plan_key == 'business' else 'badge-pro' }}">{{ plans[plan_key].name }}</span>{% endif %}
         </div>
       </div>
       <div class="row">
@@ -93,9 +92,11 @@
           </div>
           <p class="contact-phone">Телефон владельца: <strong>{{ car.phone | phone_fmt }}</strong></p>
         {% endif %}
+        {% if fresh_text %}
         <p class="fresh-note {{ '' if fresh_ok else 'fresh-note--warn' }}">
           <svg class="icon" style="width:15px;height:15px;margin-top:1px;"><use href="#{{ 'icon-check' if fresh_ok else 'icon-warning' }}"></use></svg>{{ fresh_text }}
         </p>
+        {% endif %}
         <div class="disclaimer-box" style="margin-top:14px;">
           <svg><use href="#icon-warning"></use></svg>
           <span>Условия аренды, залог и окончательная цена уточняются у владельца. KAVKAZ-CAR не является стороной сделки. Скажите владельцу, что нашли автомобиль здесь.</span>

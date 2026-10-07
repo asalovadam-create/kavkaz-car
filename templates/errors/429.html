@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% block robots %}noindex, nofollow{% endblock %}
+{% block canonical %}{{ site_url }}/{% endblock %}
 {% block title %}Слишком много попыток — KAVKAZ-CAR{% endblock %}
 {% block content %}
 <div class="container empty-state">

@@ -14,9 +14,7 @@
       <span class="owner-card__logo owner-card__logo--empty" style="width:72px;height:72px;font-size:28px;" aria-hidden="true">{{ title_name[:1] | upper }}</span>
     {% endif %}
     <div>
-      <h1 class="page-title" style="margin-bottom:4px;">{{ title_name }}
-        {% if plan != 'free' %}<span class="badge {{ 'badge-business' if plan == 'business' else 'badge-pro' }}" style="vertical-align:middle;">{{ plans[plan].name }}</span>{% endif %}
-      </h1>
+      <h1 class="page-title" style="margin-bottom:4px;">{{ title_name }}</h1>
       <p class="muted-sm">{% if cities %}{{ cities|join(', ') }}{% endif %}{% if profile.work_hours %}{% if cities %} · {% endif %}{{ profile.work_hours }}{% endif %}</p>
       {% if profile.phone_verified %}<p class="muted-sm" style="margin-top:4px;">✓ Телефон подтверждён</p>{% endif %}
       {% if profile.description %}<p class="text-muted pre-line" style="margin-top:10px;">{{ profile.description }}</p>{% endif %}

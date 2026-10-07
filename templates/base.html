@@ -29,7 +29,7 @@
     <div class="container topnav__row">
       <a href="{{ url_for('main.home') }}" class="logo" aria-label="KAVKAZ-CAR — на главную">
         <span class="logo__mark" aria-hidden="true"></span>
-        <span class="logo__k">KAVKAZ</span><span class="logo__car">-CAR</span>
+        <span class="logo__text"><span class="logo__k">KAVKAZ</span><span class="logo__car">-CAR</span></span>
       </a>
 
       <nav class="nav-links" aria-label="Основное меню">
@@ -51,6 +51,10 @@
           <svg class="icon"><use href="#icon-heart"></use></svg>
         </a>
         {% if current_user %}
+          <a href="{{ url_for('main.notifications') }}" class="icon-btn notif-btn" aria-label="Уведомления{% if unread_notifications %}: {{ unread_notifications }} новых{% endif %}">
+            <svg class="icon"><use href="#icon-bell"></use></svg>
+            {% if unread_notifications %}<span class="notif-count">{{ unread_notifications if unread_notifications < 10 else '9+' }}</span>{% endif %}
+          </a>
           <a href="{{ url_for('owner.profile') }}" class="icon-btn header-profile-btn" aria-label="Профиль">
             <svg class="icon"><use href="#icon-user"></use></svg>
           </a>
@@ -89,6 +93,7 @@
             <a href="{{ url_for('cars.catalog') }}">Каталог</a>
             <a href="{{ url_for('payments.pricing') }}">Тарифы для владельцев</a>
             <a href="{{ url_for('main.support') }}">Помощь и контакты</a>
+            <a href="{{ url_for('main.about') }}">О проекте</a>
             <a href="{{ url_for('owner.become') if current_user else url_for('auth.register', role='owner') }}">Я сдаю автомобиль</a>
           </div>
         </div>

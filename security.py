@@ -72,7 +72,19 @@ def csrf_protect():
     submitted = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token")
     expected = session.get("_csrf_token")
     if not expected or not submitted or not secrets.compare_digest(submitted, expected):
-        abort(400, description="Сессия устарела, обновите страницу и попробуйте снова.")
+        if wants_json():
+            abort(400, description="Сессия устарела, обновите страницу и попробуйте снова.")
+        # Обычная форма: не показываем пугающую страницу ошибки, а возвращаем человека
+        # туда, откуда он пришёл, с понятным сообщением.
+        from urllib.parse import urlparse
+        from flask import flash, redirect
+        flash("Страница устарела, поэтому действие не выполнено. Повторите, пожалуйста.", "error")
+        ref = urlparse(request.referrer or "")
+        if ref.netloc == request.host and ref.path:
+            return redirect(ref.path + (f"?{ref.query}" if ref.query else ""))
+        prefix = current_app.config.get("ADMIN_PREFIX", "")
+        in_admin = bool(prefix) and request.path.startswith(prefix)
+        return redirect(prefix + "/" if in_admin else "/")
 
 
 # ---------------------------------------------------------------------------

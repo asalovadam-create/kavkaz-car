@@ -18,7 +18,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import security  # noqa: E402
 from app import app  # noqa: E402
 from bootstrap import ensure_schema  # noqa: E402
-from models import AdminUser, Car, City, PaymentOrder, User, View, db  # noqa: E402
+from datetime import datetime, timedelta  # noqa: E402
+
+from models import AdminUser, Car, City, Notification, PaymentOrder, Subscription, User, View, db  # noqa: E402
 
 
 def post(client, url, data=None, **kwargs):
@@ -44,7 +46,7 @@ class SmokeTests(unittest.TestCase):
         security._attempts.clear()
         self.client = app.test_client()
         with app.app_context():
-            for model in (View, PaymentOrder, Car, User, AdminUser):
+            for model in (Notification, Subscription, View, PaymentOrder, Car, User, AdminUser):
                 db.session.query(model).delete()
             db.session.commit()
 
@@ -149,14 +151,62 @@ class SmokeTests(unittest.TestCase):
             db.session.commit()
 
         admin_client = app.test_client()
-        login = post(admin_client, "/admin/login", {"username": "boss", "password": "a-very-long-password"})
+        login = post(admin_client, app.config["ADMIN_PREFIX"] + "/login", {"username": "boss", "password": "a-very-long-password"})
         self.assertEqual(login.status_code, 302)
-        post(admin_client, f"/admin/orders/{order_id}/confirm")
-        post(admin_client, f"/admin/orders/{order_id}/confirm")  # повторное нажатие безопасно
+        post(admin_client, f"{app.config['ADMIN_PREFIX']}/orders/{order_id}/confirm")
+        post(admin_client, f"{app.config['ADMIN_PREFIX']}/orders/{order_id}/confirm")  # повторное нажатие безопасно
         with app.app_context():
             user = User.query.filter_by(phone="+79001112233").first()
             self.assertEqual(user.current_plan(), "pro")
             self.assertEqual(PaymentOrder.query.one().status, "paid")
+
+    def test_expired_subscription_pauses_extra_cars_and_purchase_restores_them(self):
+        """Тариф закончился: остаётся 1 (самое раннее) объявление, остальные приостановлены, но не удалены.
+        После новой покупки они возвращаются в каталог."""
+        from services import activate_plan, sweep_expired_subscriptions
+
+        register_owner(self.client)
+        with app.app_context():
+            user = User.query.filter_by(phone="+79001112233").first()
+            city = City.query.filter_by(slug="grozny").first()
+            for days_ago in (10, 5, 1):
+                db.session.add(Car(owner_id=user.id, city_id=city.id, brand="BMW", model=f"X{days_ago}",
+                                   phone="+79001112233", contact_consent=True, status="published",
+                                   created_at=datetime.utcnow() - timedelta(days=days_ago)))
+            db.session.add(Subscription(owner_id=user.id, plan="pro", status="active",
+                                        started_at=datetime.utcnow() - timedelta(days=40),
+                                        expires_at=datetime.utcnow() - timedelta(days=1)))
+            db.session.commit()
+
+            self.assertEqual(sweep_expired_subscriptions(), 1)
+            statuses = [c.status for c in Car.query.order_by(Car.created_at)]
+            self.assertEqual(statuses, ["published", "expired", "expired"])
+            self.assertEqual(Car.query.count(), 3)  # ничего не удалено
+            self.assertGreaterEqual(Notification.query.filter_by(user_id=user.id).count(), 1)
+            self.assertEqual(sweep_expired_subscriptions(), 0)  # повторный запуск ничего не меняет
+
+            user = User.query.filter_by(phone="+79001112233").first()
+            activate_plan(user, "pro", 30, provider="test")
+            db.session.commit()
+            self.assertEqual([c.status for c in Car.query.order_by(Car.created_at)], ["published"] * 3)
+
+    def test_notifications_page_and_admin_message(self):
+        register_owner(self.client)
+        with app.app_context():
+            user = User.query.filter_by(phone="+79001112233").first()
+            from services import notify_user
+            notify_user(user.id, "Привет от админа", "Текст", kind="admin")
+            db.session.commit()
+        resp = self.client.get("/notifications")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("Привет от админа", resp.get_data(as_text=True))
+        with app.app_context():
+            self.assertEqual(Notification.query.filter_by(is_read=False).count(), 0)
+
+    def test_sitemap_does_not_reveal_admin(self):
+        body = self.client.get("/sitemap.xml").get_data(as_text=True).lower()
+        self.assertNotIn("admin", body)
+        self.assertNotIn(app.config["ADMIN_PREFIX"].lower(), body)
 
     def test_catalog_and_search_render(self):
         register_owner(self.client)

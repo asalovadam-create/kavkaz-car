@@ -1,0 +1,20 @@
+{% extends "admin/_base.html" %}
+{% block admin_content %}
+  <form method="post" class="card" style="max-width:640px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h2>Контакты поддержки</h2>
+    <p class="muted-sm" style="margin-bottom:12px;">Показываются клиентам на странице заказа тарифа, в «Помощи» и «О проекте». Без них клиент не сможет связаться при покупке тарифа.</p>
+    <div class="field"><label for="support_telegram">Telegram</label><input id="support_telegram" name="support_telegram" value="{{ values.get('support_telegram', '') }}" placeholder="@username" maxlength="200"></div>
+    <div class="field"><label for="support_whatsapp">WhatsApp</label><input id="support_whatsapp" name="support_whatsapp" value="{{ values.get('support_whatsapp', '') }}" placeholder="+79001234567" maxlength="200"></div>
+    <div class="field"><label for="support_phone">Телефон</label><input id="support_phone" name="support_phone" value="{{ values.get('support_phone', '') }}" placeholder="+7 900 000-00-00" maxlength="200"></div>
+
+    <hr class="divider">
+    <h2>Об основателе (страница «О проекте»)</h2>
+    <p class="muted-sm" style="margin-bottom:12px;">Эти данные видны всем и попадают в разметку для поисковиков. Пишите только то, что готовы публиковать и что можно подтвердить.</p>
+    <div class="field"><label for="founder_name">Имя и фамилия</label><input id="founder_name" name="founder_name" value="{{ values.get('founder_name', '') }}" maxlength="200"></div>
+    <div class="field"><label for="founder_role">Должность</label><input id="founder_role" name="founder_role" value="{{ values.get('founder_role', '') }}" placeholder="Например, основатель KAVKAZ-CAR" maxlength="200"></div>
+    <div class="field"><label for="founder_bio">Коротко о себе</label><textarea id="founder_bio" name="founder_bio" rows="5" maxlength="3000">{{ values.get('founder_bio', '') }}</textarea></div>
+    <div class="field"><label for="founder_links">Ваши официальные страницы (по одной ссылке в строке, только https://)</label><textarea id="founder_links" name="founder_links" rows="4" maxlength="1500" placeholder="https://t.me/...&#10;https://instagram.com/...">{{ values.get('founder_links', '') }}</textarea></div>
+    <button type="submit" class="btn btn-primary btn-block">Сохранить</button>
+  </form>
+{% endblock %}

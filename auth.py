@@ -9,6 +9,8 @@
 import secrets
 from datetime import datetime
 
+import totp
+
 from flask import (
     Blueprint, current_app, flash, g, redirect, render_template, request, session, url_for,
 )
@@ -150,7 +152,7 @@ def logout():
 # Отдельный вход для администраторов
 # ---------------------------------------------------------------------------
 
-@auth_bp.route("/admin/login", methods=["GET", "POST"])
+# Маршруты входа/выхода админа регистрируются в app.py на СЕКРЕТНОМ адресе (см. config.admin_prefix).
 @rate_limit("admin_login")
 def admin_login():
     admin_secret = current_app.config.get("ADMIN_SECRET", "")
@@ -172,7 +174,14 @@ def admin_login():
         if admin is None:
             burn_password_check(password)
 
-        if not (admin and secret_ok and verify_password(admin.password_hash, password)):
+        password_ok = bool(admin) and verify_password(admin.password_hash, password)
+        # Если у админа включена 2FA — нужен ещё и код из приложения. Проверяем всегда,
+        # чтобы время ответа не показывало, какой из факторов был неверным.
+        code_ok = True
+        if admin and admin.totp_secret:
+            code_ok = totp.verify(admin.totp_secret, request.form.get("code", ""))
+
+        if not (admin and secret_ok and password_ok and code_ok):
             record_failure("admin_login_fail")
             flash("Неверные учётные данные.", "error")
             return render_template("admin/login.html", needs_secret=needs_secret), 400
@@ -189,7 +198,6 @@ def admin_login():
     return render_template("admin/login.html", needs_secret=needs_secret)
 
 
-@auth_bp.route("/admin/logout", methods=["POST"])
 @admin_required
 def admin_logout():
     session.clear()

@@ -30,6 +30,12 @@
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="q" value="{{ q }}">
                   <button type="submit" class="btn btn-ghost btn-sm">Сбросить пароль</button>
                 </form>
+                <form method="post" action="{{ url_for('admin_panel.send_message', user_id=user.id) }}" class="row" style="flex-wrap:wrap;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="q" value="{{ q }}">
+                  <input name="title" class="admin-input" placeholder="Тема сообщения" maxlength="160" style="width:150px;" aria-label="Тема" required>
+                  <input name="body" class="admin-input" placeholder="Текст" maxlength="2000" style="width:180px;" aria-label="Текст">
+                  <button type="submit" class="btn btn-ghost btn-sm">Написать</button>
+                </form>
                 <form method="post" action="{{ url_for('admin_panel.set_plan', user_id=user.id) }}" class="row">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="q" value="{{ q }}">
                   <select name="plan" class="admin-input" aria-label="Тариф">{% for p in plan_order %}<option value="{{ p }}">{{ p|upper }}</option>{% endfor %}</select>

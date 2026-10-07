@@ -17,10 +17,15 @@ from models import (
 )
 from payments import mark_order_paid
 from security import admin_required, hash_password
-from services import activate_plan, generate_promo_code, purge_car
+from config import STATUS_LABELS
+from services import (
+    SETTING_KEYS, activate_plan, enforce_plan_limits, generate_promo_code, get_settings, notify_user,
+    purge_car, save_settings,
+)
 from validators import clean_text, to_int
 
-admin_bp = Blueprint("admin_panel", __name__, url_prefix="/admin")
+# Адрес (url_prefix) задаётся при регистрации в app.py — он секретный и не равен /admin.
+admin_bp = Blueprint("admin_panel", __name__)
 
 
 def _log_action(action: str, target_type: str | None = None, target_id: int | None = None):
@@ -78,6 +83,8 @@ def users():
 def toggle_block_user(user_id):
     user = User.query.get_or_404(user_id)
     user.is_blocked = not user.is_blocked
+    if not user.is_blocked:
+        notify_user(user.id, "Аккаунт разблокирован", "Администрация сняла ограничения с вашего аккаунта.", kind="admin")
     _log_action("block_user" if user.is_blocked else "unblock_user", "user", user.id)
     db.session.commit()
     flash("Статус пользователя обновлён.", "success")
@@ -93,6 +100,9 @@ def toggle_phone_verified(user_id):
         profile = OwnerProfile(user_id=user.id, display_name=user.full_name or user.phone)
         db.session.add(profile)
     profile.phone_verified = not profile.phone_verified
+    if profile.phone_verified:
+        notify_user(user.id, "Телефон подтверждён", "Администрация подтвердила ваш номер — в профиле появилась отметка.",
+                    kind="admin", link="/owner/profile")
     _log_action("phone_verified" if profile.phone_verified else "phone_unverified", "user", user.id)
     db.session.commit()
     flash("Отметка «телефон подтверждён» обновлена.", "success")
@@ -107,6 +117,7 @@ def reset_user_password(user_id):
     user = User.query.get_or_404(user_id)
     temp = secrets.token_urlsafe(9)
     user.password_hash = hash_password(temp)
+    notify_user(user.id, "Пароль сброшен администрацией", "Для входа используйте временный пароль от поддержки и сразу смените его в профиле.", kind="admin")
     _log_action("reset_password", "user", user.id)
     db.session.commit()
     flash(f"Временный пароль для {user.phone}: {temp} — передайте владельцу, пусть сразу сменит его в профиле.", "success")
@@ -129,6 +140,10 @@ def set_plan(user_id):
         if current:
             current.status = "cancelled"
         user.invalidate_plan_cache()
+        paused = enforce_plan_limits(user)  # лишние объявления приостанавливаются, не удаляются
+        notify_user(user.id, "Тариф изменён на FREE",
+                    f"Приостановлено объявлений: {paused}. Они вернутся после покупки тарифа." if paused
+                    else "Ваши объявления остаются в каталоге.", kind="plan", link="/pricing")
     else:
         activate_plan(user, plan, days, provider="manual_admin", admin_id=g.current_admin.id)
     _log_action(f"set_plan:{plan}:{days}d", "user", user.id)
@@ -162,6 +177,8 @@ def set_car_status(car_id):
         return redirect(url_for("admin_panel.cars"))
 
     car.status = new_status
+    notify_user(car.owner_id, f"Объявление «{car.title()}»: {STATUS_LABELS.get(new_status, new_status).lower()}",
+                "Статус изменён администрацией. Если это ошибка — свяжитесь с поддержкой.", kind="car", link="/owner/dashboard")
     _log_action(f"set_car_status:{new_status}", "car", car.id)
     db.session.commit()
     flash("Статус автомобиля обновлён.", "success")
@@ -172,7 +189,9 @@ def set_car_status(car_id):
 @admin_required
 def delete_car(car_id):
     car = Car.query.get_or_404(car_id)
+    owner_id = car.owner_id
     title = purge_car(car)
+    notify_user(owner_id, f"Объявление «{title}» удалено", "Объявление удалено администрацией. Подробности — в поддержке.", kind="car")
     _log_action(f"delete_car:{title}", "car", car_id)
     db.session.commit()
     flash("Объявление удалено безвозвратно.", "success")
@@ -201,7 +220,9 @@ def resolve_report(report_id):
 
     if action == "delete" and report.car:
         car_id = report.car_id
+        owner_id = report.car.owner_id
         title = purge_car(report.car)  # вместе с самой жалобой
+        notify_user(owner_id, f"Объявление «{title}» удалено", "По жалобам клиентов объявление удалено администрацией.", kind="car")
         _log_action(f"delete_car_via_report:{title}", "car", car_id)
         db.session.commit()
         flash("Объявление удалено, жалоба закрыта.", "success")
@@ -213,6 +234,10 @@ def resolve_report(report_id):
         report.car.status = "blocked"
     elif action == "restore" and report.car:
         report.car.status = "published"
+    if report.car and action in ("hide", "block", "restore"):
+        titles = {"hide": "скрыто", "block": "заблокировано", "restore": "возвращено в каталог"}
+        notify_user(report.car.owner_id, f"Объявление «{report.car.title()}» {titles[action]}",
+                    "Решение принято по жалобе клиента. Вопросы — в поддержку.", kind="car", link="/owner/dashboard")
 
     report.status = "actioned" if action in ("hide", "block", "restore") else "dismissed"
     report.resolved_at = datetime.utcnow()
@@ -304,3 +329,38 @@ def promo_codes():
 def logs():
     all_logs = AdminLog.query.order_by(AdminLog.created_at.desc()).limit(300).all()
     return render_template("admin/logs.html", logs=all_logs)
+
+
+# ---------------------------------------------------------------------------
+# Сообщения пользователям и настройки сайта
+# ---------------------------------------------------------------------------
+
+@admin_bp.route("/users/<int:user_id>/message", methods=["POST"])
+@admin_required
+def send_message(user_id):
+    """Сообщение от администрации появится у пользователя в «колокольчике»."""
+    user = User.query.get_or_404(user_id)
+    title = clean_text(request.form.get("title"), 160)
+    body = clean_text(request.form.get("body"), 2000)
+    if not title:
+        flash("Введите тему сообщения.", "error")
+    else:
+        notify_user(user.id, title, body, kind="admin")
+        _log_action(f"message:{title[:40]}", "user", user.id)
+        db.session.commit()
+        flash(f"Сообщение отправлено пользователю {user.phone}.", "success")
+    return redirect(url_for("admin_panel.users", q=request.form.get("q", "")))
+
+
+@admin_bp.route("/settings", methods=["GET", "POST"])
+@admin_required
+def settings():
+    if request.method == "POST":
+        limits = {"founder_bio": 3000, "founder_links": 1500}
+        values = {key: clean_text(request.form.get(key), limits.get(key, 200)) for key in SETTING_KEYS}
+        save_settings(values)
+        _log_action("save_settings")
+        db.session.commit()
+        flash("Настройки сохранены.", "success")
+        return redirect(url_for("admin_panel.settings"))
+    return render_template("admin/settings.html", values=get_settings())

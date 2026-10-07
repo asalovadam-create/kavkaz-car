@@ -59,7 +59,7 @@ class Config:
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = _env_bool("FORCE_HTTPS", True)
     PERMANENT_SESSION_LIFETIME = 60 * 60 * 24 * 14  # 14 дней для клиента
-    ADMIN_SESSION_LIFETIME = 60 * 30  # 30 минут неактивности для админки
+    ADMIN_SESSION_LIFETIME = _env_int("ADMIN_SESSION_MINUTES", 120) * 60  # неактивность до выхода из админки (по умолчанию 2 часа)
 
     # --- Загрузка фото ---
     UPLOAD_PROVIDER = os.environ.get("UPLOAD_PROVIDER", "local")  # local | cloudinary
@@ -70,7 +70,12 @@ class Config:
     MAX_PHOTO_SOURCE_MB = 10  # максимальный размер одного исходного файла
 
     # --- Админка ---
-    ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "")  # доп. секрет для /admin/login
+    ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "")  # доп. секрет при входе в админку
+    # Секретный адрес админки, например ADMIN_PATH=/ctl-k8f3a9x2q7. Если не задан, адрес
+    # вычисляется из SECRET_KEY и выводится в логи при старте. Адреса /admin на сайте НЕТ.
+    ADMIN_PATH = os.environ.get("ADMIN_PATH", "")
+    # Необязательно: пускать в админку только с этих IP (через запятую). Остальным — обычная 404.
+    ADMIN_ALLOWED_IPS = [ip.strip() for ip in os.environ.get("ADMIN_ALLOWED_IPS", "").split(",") if ip.strip()]
 
     # --- Прочее ---
     SITE_URL = os.environ.get("SITE_URL", "https://kavkaz-car.ru").rstrip("/")
@@ -101,6 +106,16 @@ class Config:
     # --- Уведомления админу (необязательно) ---
     TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+
+
+def admin_prefix(secret_key: str, configured: str = "") -> str:
+    """Секретный URL-префикс админки. Задан вручную (ADMIN_PATH) или выводится из SECRET_KEY."""
+    import hashlib
+    import re
+    value = "/" + (configured or "").strip().strip("/")
+    if re.fullmatch(r"/[A-Za-z0-9_-]{6,60}", value) and value.lower() not in ("/admin", "/administrator", "/login"):
+        return value
+    return "/panel-" + hashlib.sha256(("admin-path:" + (secret_key or "")).encode()).hexdigest()[:14]
 
 
 def is_placeholder_admin_secret(value: str) -> bool:
@@ -181,7 +196,6 @@ PLAN_PITCH = {
             "До 5 автомобилей",
             "До 15 фото на каждый",
             "1 поднятие в топ в месяц (на 48 часов)",
-            "Значок PRO — клиенты доверяют больше",
             "Подтверждать актуальность не нужно",
             "Статистика по каждой машине: просмотры и обращения по дням и каналам",
             "Выше в выдаче, чем бесплатные объявления",
@@ -291,7 +305,7 @@ STATUS_LABELS = {
     "published": "Опубликовано",
     "paused": "Приостановлено",
     "blocked": "Заблокировано",
-    "expired": "Истёк срок",
+    "expired": "Тариф закончился",
 }
 
 ORDER_STATUS_LABELS = {

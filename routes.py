@@ -3,13 +3,14 @@
 """
 from xml.sax.saxutils import escape
 
-from flask import Blueprint, Response, current_app, jsonify, render_template, url_for
+from flask import Blueprint, Response, current_app, flash, g, jsonify, redirect, render_template, request, url_for
 from sqlalchemy import func, text
 from sqlalchemy.orm import joinedload, selectinload
 
 from config import BODY_TYPES, EVENT_TYPES, LAUNCH_CITIES
-from models import Car, City, User, db
-from services import build_car_slug, preload_plans, rank_cars
+from models import Car, City, Notification, User, db
+from security import login_required
+from services import build_car_slug, get_settings, preload_plans, rank_cars
 
 main_bp = Blueprint("main", __name__)
 
@@ -78,7 +79,6 @@ def robots():
         "User-agent: *",
         "Allow: /",
         "Disallow: /owner/",
-        "Disallow: /admin/",
         "Disallow: /orders/",
         "Disallow: /checkout",
         "Disallow: /payments/",
@@ -92,7 +92,8 @@ def robots():
 def sitemap():
     site_url = current_app.config["SITE_URL"]
     entries = [(site_url + "/", None), (site_url + url_for("cars.catalog"), None),
-               (site_url + url_for("payments.pricing"), None), (site_url + url_for("main.support"), None)]
+               (site_url + url_for("payments.pricing"), None), (site_url + url_for("main.support"), None),
+               (site_url + url_for("main.about"), None)]
     entries += [(f"{site_url}/{c['slug']}", None) for c in LAUNCH_CITIES]
 
     cars = (
@@ -107,3 +108,56 @@ def sitemap():
         body.append(f"<url><loc>{escape(url)}</loc>{lastmod}</url>")
     body.append("</urlset>")
     return Response("\n".join(body), mimetype="application/xml")
+
+
+# ---------------------------------------------------------------------------
+# Уведомления пользователя («колокольчик»)
+# ---------------------------------------------------------------------------
+
+@main_bp.route("/notifications")
+@login_required
+def notifications():
+    items = (
+        Notification.query.filter_by(user_id=g.current_user.id)
+        .order_by(Notification.created_at.desc()).limit(100).all()
+    )
+    unread_ids = [n.id for n in items if not n.is_read]
+    page = render_template("notifications.html", items=items, unread_ids=set(unread_ids))
+    if unread_ids:  # открыл страницу — значит прочитал (подсветка «новое» уже отрисована)
+        Notification.query.filter(Notification.id.in_(unread_ids)).update({"is_read": True}, synchronize_session=False)
+        db.session.commit()
+    return page
+
+
+@main_bp.route("/notifications/clear", methods=["POST"])
+@login_required
+def notifications_clear():
+    Notification.query.filter_by(user_id=g.current_user.id, is_read=True).delete(synchronize_session=False)
+    db.session.commit()
+    flash("Прочитанные уведомления удалены.", "success")
+    return redirect(url_for("main.notifications"))
+
+
+# ---------------------------------------------------------------------------
+# О проекте и основателе (данные вводит админ в «Настройках сайта»)
+# ---------------------------------------------------------------------------
+
+@main_bp.route("/about")
+def about():
+    saved = get_settings()
+    links = [line.strip() for line in saved.get("founder_links", "").splitlines() if line.strip().startswith("https://")]
+    site_url = current_app.config["SITE_URL"]
+    name = saved.get("founder_name", "").strip()
+    organization = {
+        "@context": "https://schema.org", "@type": "Organization", "name": "KAVKAZ-CAR",
+        "url": site_url, "description": "Платформа аренды автомобилей на Северном Кавказе.",
+    }
+    if name:
+        person = {"@type": "Person", "name": name, "url": f"{site_url}/about"}
+        if saved.get("founder_role"):
+            person["jobTitle"] = saved["founder_role"].strip()
+        if links:
+            person["sameAs"] = links
+        organization["founder"] = person
+    return render_template("about.html", name=name, role=saved.get("founder_role", "").strip(),
+                           bio=saved.get("founder_bio", "").strip(), links=links, jsonld=organization)
