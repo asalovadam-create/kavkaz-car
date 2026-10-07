@@ -355,6 +355,7 @@ def _register_template_globals(app: Flask) -> None:
             order_status_labels=ORDER_STATUS_LABELS,
             fav_ids=fav_ids,
             unread_notifications=unread,
+            has_logo_image=os.path.exists(os.path.join(app.static_folder, "img", "logo.png")),
         )
 
 

@@ -1055,3 +1055,15 @@ main { min-height: 60vh; }
 .notif__tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,0.07); color: var(--text-secondary); margin-bottom: 6px; }
 .notif__tag--admin { background: rgba(201, 138, 62, 0.18); color: var(--accent-strong); }
 .expired-note { color: #f0b3a6; font-size: 13px; margin-top: 8px; }
+
+/* --- логотип-картинка и режим «как приложение» --- */
+.logo__img { width: 30px; height: 30px; border-radius: 8px; object-fit: contain; flex-shrink: 0; }
+.link-btn { background: none; border: 0; padding: 0; font: inherit; color: var(--accent-strong); cursor: pointer; text-align: left; }
+.link-btn:hover { text-decoration: underline; }
+@media (display-mode: standalone) {
+  /* В режиме приложения нет адресной строки: убираем «сайтовые» привычки — выделение и контекстное меню у кнопок */
+  body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+  input, textarea, select, .pre-line, .notif__body, .contact-phone { -webkit-user-select: text; user-select: text; }
+  a, button, img { -webkit-touch-callout: none; }
+  html { overscroll-behavior-y: none; }
+}

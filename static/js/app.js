@@ -457,4 +457,30 @@
     var target = auto.getAttribute("data-autoredirect");
     if (/^https:\/\//.test(target)) setTimeout(function () { window.location.href = target; }, 1500);
   }
+
+  /* --------------------- Приложение: service worker и кнопка «Установить» ---------- */
+
+  if ("serviceWorker" in navigator && window.location.protocol === "https:") {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("/sw.js").catch(function () { /* без него сайт тоже работает */ });
+    });
+  }
+
+  var installPrompt = null;
+  function toggleInstall(show) {
+    document.querySelectorAll("[data-install]").forEach(function (b) { b.hidden = !show; });
+  }
+  window.addEventListener("beforeinstallprompt", function (evt) {
+    evt.preventDefault();
+    installPrompt = evt;
+    toggleInstall(true);
+  });
+  window.addEventListener("appinstalled", function () { installPrompt = null; toggleInstall(false); });
+  document.querySelectorAll("[data-install]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      if (!installPrompt) return;
+      installPrompt.prompt();
+      installPrompt.userChoice.then(function () { installPrompt = null; toggleInstall(false); });
+    });
+  });
 })();

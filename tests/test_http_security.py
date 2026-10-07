@@ -143,6 +143,47 @@ class HttpSecurityTests(unittest.TestCase):
         resp = self.client.get("/owner/dashboard")
         self.assertIn(resp.status_code, (302, 401))
 
+    def test_manifest_makes_the_site_installable_as_app(self):
+        import json
+        resp = self.client.get("/manifest.webmanifest")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("manifest+json", resp.mimetype)
+        data = json.loads(resp.get_data(as_text=True))
+        self.assertEqual(data["display"], "standalone")  # без адресной строки браузера
+        self.assertEqual(data["scope"], "/")
+        sizes = {icon["sizes"] for icon in data["icons"]}
+        self.assertTrue({"192x192", "512x512"} <= sizes)
+        self.assertIn("maskable", {icon["purpose"] for icon in data["icons"]})
+        for icon in data["icons"]:  # каждый файл иконки реально существует
+            path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), icon["src"].split("?")[0].lstrip("/"))
+            self.assertTrue(os.path.exists(path), path)
+        self.assertNotIn(app.config["ADMIN_PREFIX"], resp.get_data(as_text=True))  # админка не упоминается
+
+    def test_service_worker_is_served_from_root_with_version(self):
+        resp = self.client.get("/sw.js")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.headers["Service-Worker-Allowed"], "/")
+        self.assertEqual(resp.headers["Cache-Control"], "no-cache")
+        body = resp.get_data(as_text=True)
+        self.assertNotIn("__VERSION__", body)
+        self.assertIn(app.config["ASSET_VERSION"], body)
+        # страницы с личными данными в кэш не попадают: кэшируется только статика
+        self.assertIn("(css|js|icons|img)", body)
+        self.assertNotIn("/owner", body)  # личные страницы service worker не трогает
+
+    def test_offline_page_contains_no_session_data(self):
+        html = self.client.get("/offline").get_data(as_text=True)
+        self.assertIn("Нет соединения", html)
+        self.assertNotIn("csrf-token", html)
+
+    def test_pages_link_the_manifest_and_apple_icon(self):
+        html = self.client.get("/login").get_data(as_text=True)
+        self.assertIn('rel="manifest"', html)
+        self.assertIn('rel="apple-touch-icon"', html)
+        self.assertIn('name="apple-mobile-web-app-capable" content="yes"', html)
+        admin_html = self.client.get(app.config["ADMIN_PREFIX"] + "/login").get_data(as_text=True)
+        self.assertNotIn('rel="manifest"', admin_html)  # админку нельзя «установить»
+
     def test_robots_hides_private_areas(self):
         body = self.client.get("/robots.txt").get_data(as_text=True)
         for path in ("/owner/", "/orders/", "/payments/"):

@@ -9,7 +9,15 @@
   <meta name="description" content="{% block description %}Аренда автомобилей в Грозном, Махачкале, Владикавказе, Нальчике и других городах Северного Кавказа. Цены и условия видны сразу, звонок владельцу — в одно касание.{% endblock %}">
   <meta name="robots" content="{% block robots %}index, follow{% endblock %}">
   <link rel="canonical" href="{% block canonical %}{{ site_url }}{{ request.path }}{% endblock %}">
-  <link rel="icon" type="image/svg+xml" href="{{ static_url('icons/favicon.svg') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ static_url('icons/favicon-32.png') }}">
+  <link rel="apple-touch-icon" href="{{ static_url('icons/apple-touch-icon.png') }}">
+  <link rel="manifest" href="{{ url_for('main.manifest') }}">
+  <meta name="application-name" content="KAVKAZ-CAR">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="KAVKAZ-CAR">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="KAVKAZ-CAR">
   <meta property="og:locale" content="ru_RU">
@@ -28,7 +36,7 @@
   <header class="topnav glass">
     <div class="container topnav__row">
       <a href="{{ url_for('main.home') }}" class="logo" aria-label="KAVKAZ-CAR — на главную">
-        <span class="logo__mark" aria-hidden="true"></span>
+        {% if has_logo_image %}<img class="logo__img" src="{{ static_url('img/logo.png') }}" alt="" width="30" height="30">{% else %}<span class="logo__mark" aria-hidden="true"></span>{% endif %}
         <span class="logo__text"><span class="logo__k">KAVKAZ</span><span class="logo__car">-CAR</span></span>
       </a>
 
@@ -94,6 +102,7 @@
             <a href="{{ url_for('payments.pricing') }}">Тарифы для владельцев</a>
             <a href="{{ url_for('main.support') }}">Помощь и контакты</a>
             <a href="{{ url_for('main.about') }}">О проекте</a>
+            <button type="button" class="link-btn" data-install hidden>Установить приложение</button>
             <a href="{{ url_for('owner.become') if current_user else url_for('auth.register', role='owner') }}">Я сдаю автомобиль</a>
           </div>
         </div>

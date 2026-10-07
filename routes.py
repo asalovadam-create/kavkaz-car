@@ -1,6 +1,7 @@
 """
 Общие маршруты: главная страница, помощь, юридические документы, служебные эндпоинты.
 """
+import os
 from xml.sax.saxutils import escape
 
 from flask import Blueprint, Response, current_app, flash, g, jsonify, redirect, render_template, request, url_for
@@ -161,3 +162,59 @@ def about():
         organization["founder"] = person
     return render_template("about.html", name=name, role=saved.get("founder_role", "").strip(),
                            bio=saved.get("founder_bio", "").strip(), links=links, jsonld=organization)
+
+
+# ---------------------------------------------------------------------------
+# Установка на телефон как приложение (PWA)
+# ---------------------------------------------------------------------------
+
+@main_bp.route("/manifest.webmanifest")
+def manifest():
+    """Описание приложения: имя, цвета, иконки. Благодаря ему ярлык на экране «Домой» открывается
+    во весь экран, без адресной строки браузера. Админка здесь не упоминается."""
+    v = current_app.config["ASSET_VERSION"]
+
+    def icon(file, size, purpose="any"):
+        return {"src": f"/static/icons/{file}?v={v}", "sizes": f"{size}x{size}", "type": "image/png", "purpose": purpose}
+
+    data = {
+        "id": "/",
+        "name": "KAVKAZ-CAR — аренда авто на Кавказе",
+        "short_name": "KAVKAZ-CAR",
+        "description": "Аренда автомобилей на Северном Кавказе: цены и условия видны сразу, звонок владельцу в одно касание.",
+        "start_url": "/?source=app",
+        "scope": "/",
+        "display": "standalone",
+        "orientation": "portrait",
+        "background_color": "#0b0c0e",
+        "theme_color": "#0b0c0e",
+        "lang": "ru",
+        "categories": ["travel", "business"],
+        "icons": [icon("icon-192.png", 192), icon("icon-512.png", 512), icon("icon-maskable-512.png", 512, "maskable")],
+        "shortcuts": [
+            {"name": "Каталог", "url": "/catalog?source=shortcut", "icons": [icon("icon-192.png", 192)]},
+            {"name": "Подобрать автомобиль", "url": "/help-me-choose?source=shortcut", "icons": [icon("icon-192.png", 192)]},
+            {"name": "Избранное", "url": "/favorites?source=shortcut", "icons": [icon("icon-192.png", 192)]},
+        ],
+    }
+    response = jsonify(data)
+    response.mimetype = "application/manifest+json"
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    return response
+
+
+@main_bp.route("/sw.js")
+def service_worker():
+    """Service worker должен отдаваться с корня сайта, иначе он не сможет управлять всеми страницами."""
+    path = os.path.join(current_app.static_folder, "js", "sw.js")
+    with open(path, encoding="utf-8") as handle:
+        body = handle.read().replace("__VERSION__", current_app.config["ASSET_VERSION"])
+    response = Response(body, mimetype="text/javascript")
+    response.headers["Cache-Control"] = "no-cache"
+    response.headers["Service-Worker-Allowed"] = "/"
+    return response
+
+
+@main_bp.route("/offline")
+def offline():
+    return render_template("offline.html")
