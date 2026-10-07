@@ -29,14 +29,29 @@
 
   <div class="detail-layout">
     <div class="detail-gallery car-hero" data-gallery>
-      <div class="car-hero__main">
-        <img data-gallery-main src="{{ photo.url if photo else '' }}" alt="{{ car.title() }}" {% if not photo %}hidden{% endif %}>
-        {% if not photo %}<div class="skeleton" style="aspect-ratio:4/3;"></div>{% endif %}
-      </div>
-      <div class="car-hero__swipe">
-        {% for p in car.photos %}
-          <img src="{{ p.url }}" alt="{{ car.title() }} — фото {{ loop.index }}" loading="{{ 'eager' if loop.first else 'lazy' }}">
-        {% endfor %}
+      <div class="car-hero__stage">
+        <div class="car-hero__main">
+          <img data-gallery-main src="{{ photo.url if photo else '' }}" alt="{{ car.title() }}" {% if not photo %}hidden{% endif %}>
+          {% if not photo %}<div class="skeleton" style="aspect-ratio:4/3;"></div>{% endif %}
+        </div>
+        <div class="car-hero__swipe">
+          {% if not car.photos %}<div class="skeleton" style="flex:0 0 100%;aspect-ratio:4/3;"></div>{% endif %}
+          {% for p in car.photos %}
+            <img src="{{ p.url }}" alt="{{ car.title() }} — фото {{ loop.index }}" loading="{{ 'eager' if loop.first else 'lazy' }}">
+          {% endfor %}
+        </div>
+        {% if car.photos|length > 1 %}
+          <button type="button" class="car-hero__arrow car-hero__arrow--prev" data-gallery-prev aria-label="Предыдущее фото">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+          </button>
+          <button type="button" class="car-hero__arrow car-hero__arrow--next" data-gallery-next aria-label="Следующее фото">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+          </button>
+          <span class="car-hero__count" data-gallery-count>1 / {{ car.photos|length }}</span>
+          <div class="car-hero__dots" aria-hidden="true">
+            {% for p in car.photos %}<span data-gallery-dot class="{{ 'is-active' if loop.first }}"></span>{% endfor %}
+          </div>
+        {% endif %}
       </div>
       <div class="car-hero__thumbs">
         {% for p in car.photos %}

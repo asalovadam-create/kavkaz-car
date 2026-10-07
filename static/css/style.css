@@ -597,6 +597,17 @@ p { margin: 0; }
 /* Раньше главное фото показывалось и на телефоне — вместе со свайп-галереей фото двоилось. */
 @media (min-width: 700px) { .car-hero__main { display: block; } }
 .car-hero__main img { width: 100%; height: 100%; object-fit: cover; }
+.car-hero__stage { position: relative; }
+.car-hero__arrow { position: absolute; top: 50%; transform: translateY(-50%); z-index: 2; width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.18); background: rgba(0,0,0,0.55); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background var(--dur-micro) var(--ease); }
+.car-hero__arrow:hover { background: rgba(0,0,0,0.8); }
+.car-hero__arrow:active { transform: translateY(-50%) scale(0.94); }
+.car-hero__arrow--prev { left: 10px; }
+.car-hero__arrow--next { right: 10px; }
+.car-hero__count { position: absolute; right: 12px; bottom: 12px; z-index: 2; background: rgba(0,0,0,0.6); color: #fff; font-size: 13px; font-weight: 600; padding: 4px 11px; border-radius: 999px; }
+.car-hero__dots { position: absolute; left: 0; right: 0; bottom: 16px; z-index: 2; display: flex; justify-content: center; gap: 6px; pointer-events: none; }
+.car-hero__dots span { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.4); transition: all var(--dur-micro) var(--ease); }
+.car-hero__dots span.is-active { background: #fff; width: 18px; border-radius: 4px; }
+@media (min-width: 700px) { .car-hero__dots { display: none; } }
 .car-hero__thumbs { display: none; gap: 8px; padding: 10px; overflow-x: auto; }
 @media (min-width: 700px) { .car-hero__thumbs { display: flex; } }
 .car-hero__thumbs img { width: 76px; height: 56px; object-fit: cover; border-radius: 8px; opacity: 0.55; cursor: pointer; transition: opacity var(--dur-micro) var(--ease); }
@@ -1006,7 +1017,13 @@ main { min-height: 60vh; }
 
 /* ===================== Мобильная доработка по скриншотам ===================== */
 
-.logo__text { display: inline-flex; }
+.logo__text { display: inline-flex; white-space: nowrap; flex-shrink: 0; }
+.logo { flex-shrink: 0; min-width: 0; }
+@media (max-width: 480px) {
+  .logo { font-size: 15px; gap: 6px; }
+  .logo__img { height: 26px; max-width: 60px; }
+}
+@media (max-width: 350px) { .logo__text { display: none; } }
 .event-label { text-align: center; color: var(--text-secondary); font-size: 13px; margin: 22px 0 6px; }
 .hero-cta { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; font-size: 14px; font-weight: 600; color: var(--accent-strong); }
 .hero-cta:hover { text-decoration: underline; }

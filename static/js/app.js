@@ -336,6 +336,53 @@
     });
   });
 
+  /* Стрелки, счётчик «1 / N» и точки: на телефоне листают свайп-ленту, на компьютере — главное фото */
+  document.querySelectorAll("[data-gallery]").forEach(function (gallery) {
+    var thumbs = gallery.querySelectorAll("[data-gallery-thumb]");
+    var total = thumbs.length;
+    var prev = gallery.querySelector("[data-gallery-prev]");
+    var next = gallery.querySelector("[data-gallery-next]");
+    if (total < 2 || !prev || !next) return;
+    var swipe = gallery.querySelector(".car-hero__swipe");
+    var main = gallery.querySelector("[data-gallery-main]");
+    var counter = gallery.querySelector("[data-gallery-count]");
+    var dots = gallery.querySelectorAll("[data-gallery-dot]");
+    var index = 0, ticking = false;
+
+    function swipeVisible() { return swipe && getComputedStyle(swipe).display !== "none"; }
+    function render() {
+      counter.textContent = (index + 1) + " / " + total;
+      dots.forEach(function (d, i) { d.classList.toggle("is-active", i === index); });
+      thumbs.forEach(function (t, i) { t.classList.toggle("is-active", i === index); });
+    }
+    function go(i) {
+      index = (i + total) % total;
+      if (swipeVisible()) {
+        swipe.scrollTo({ left: index * swipe.clientWidth, behavior: "smooth" });
+      } else {
+        main.src = thumbs[index].getAttribute("data-gallery-thumb");
+      }
+      render();
+    }
+    prev.addEventListener("click", function () { go(index - 1); });
+    next.addEventListener("click", function () { go(index + 1); });
+    thumbs.forEach(function (t, i) { t.addEventListener("click", function () { index = i; render(); }); });
+    swipe.addEventListener("scroll", function () {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () {
+        ticking = false;
+        if (!swipe.clientWidth) return;
+        var i = Math.round(swipe.scrollLeft / swipe.clientWidth);
+        if (i !== index && i >= 0 && i < total) { index = i; render(); }
+      });
+    }, { passive: true });
+    gallery.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowLeft") go(index - 1);
+      if (e.key === "ArrowRight") go(index + 1);
+    });
+  });
+
   /* ------------------------- Фото: загрузка, порядок, удаление ---------------- */
 
   function photoItem(src, token, isPrimary) {
