@@ -1,0 +1,70 @@
+# KAVKAZ-CAR на своём сервере: сайт + база + HTTPS-прокси (Caddy).
+# Управление: docker compose up -d --build | docker compose logs -f web | docker compose ps
+name: kavkazcar
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: kavkazcar
+      POSTGRES_USER: kavkazcar
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    command: >
+      postgres
+      -c shared_buffers=128MB
+      -c effective_cache_size=512MB
+      -c work_mem=4MB
+      -c maintenance_work_mem=64MB
+      -c max_connections=40
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kavkazcar -d kavkazcar"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    mem_limit: 700m
+
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://kavkazcar:${DB_PASSWORD}@db:5432/kavkazcar
+      UPLOAD_PROVIDER: local
+      WEB_WORKERS: "2"
+      PORT: "8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/static/uploads
+    expose:
+      - "8000"
+    mem_limit: 800m
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./static:/srv/static:ro
+      - uploads:/srv/static/uploads:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  uploads:
+  caddy_data:
+  caddy_config:

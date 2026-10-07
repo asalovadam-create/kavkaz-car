@@ -1,0 +1,35 @@
+{
+	email {$ACME_EMAIL}
+}
+
+# www -> без www (один адрес сайта для Google и Яндекса)
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	request_body {
+		max_size 15MB
+	}
+
+	# Загруженные фото отдаём напрямую с диска, минуя Python, с длинным кэшем
+	handle /static/uploads/* {
+		root * /srv
+		header Cache-Control "public, max-age=2592000"
+		file_server
+	}
+
+	# Стили, скрипты, иконки (в ссылках есть ?v=, поэтому после обновления сайта кэш обновляется сам)
+	handle /static/* {
+		root * /srv
+		header Cache-Control "public, max-age=604800"
+		file_server
+	}
+
+	# Всё остальное — приложение
+	handle {
+		reverse_proxy web:8000
+	}
+}
