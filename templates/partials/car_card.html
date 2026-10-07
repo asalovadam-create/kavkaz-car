@@ -1,6 +1,6 @@
 {% set photo = car.primary_photo() %}
 {% set plan_key = car.owner.current_plan() %}
-<article class="car-card" data-car-card>
+<article class="car-card" data-car-card data-car-id="{{ car.public_id }}">
   <a href="{{ car_detail_url(car) }}" class="car-card__media" aria-label="{{ car.title() }}, {{ car.city.name }}">
     {% if photo %}
       <img src="{{ photo.thumbnail_url or photo.url }}" alt="{{ car.title() }}" loading="lazy" width="400" height="300">

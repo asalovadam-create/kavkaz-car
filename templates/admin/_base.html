@@ -12,7 +12,7 @@
 <body data-authenticated="0">
   <header class="topnav glass">
     <div class="container topnav__row">
-      <span class="logo">{% if has_logo_image %}<img class="logo__img" src="{{ static_url('img/logo.png') }}" alt="" width="30" height="30">{% else %}<span class="logo__mark"></span>{% endif %}KAVKAZ-CAR <span class="text-muted" style="font-weight:400;font-size:13px;">/ admin</span></span>
+      <span class="logo">{% if has_logo_image %}<img class="logo__img" src="{{ static_url('img/logo-mark.png') }}" alt="" width="68" height="30">{% else %}<span class="logo__mark"></span>{% endif %}KAVKAZ-CAR <span class="text-muted" style="font-weight:400;font-size:13px;">/ admin</span></span>
       <form method="post" action="{{ url_for('auth.admin_logout') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-ghost btn-sm">Выйти</button>

@@ -593,13 +593,16 @@ p { margin: 0; }
 /* ============================== CAR DETAIL =============================== */
 
 .car-hero { border-radius: var(--radius-lg); overflow: hidden; background: var(--bg-surface-raised); }
-.car-hero__main { aspect-ratio: 4/3; overflow: hidden; }
+.car-hero__main { display: none; aspect-ratio: 4/3; overflow: hidden; }
+/* Раньше главное фото показывалось и на телефоне — вместе со свайп-галереей фото двоилось. */
+@media (min-width: 700px) { .car-hero__main { display: block; } }
 .car-hero__main img { width: 100%; height: 100%; object-fit: cover; }
 .car-hero__thumbs { display: none; gap: 8px; padding: 10px; overflow-x: auto; }
 @media (min-width: 700px) { .car-hero__thumbs { display: flex; } }
 .car-hero__thumbs img { width: 76px; height: 56px; object-fit: cover; border-radius: 8px; opacity: 0.55; cursor: pointer; transition: opacity var(--dur-micro) var(--ease); }
 .car-hero__thumbs img.is-active { opacity: 1; outline: 2px solid var(--accent); }
-.car-hero__swipe { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; }
+.car-hero__swipe { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.car-hero__swipe::-webkit-scrollbar { display: none; }
 @media (min-width: 700px) { .car-hero__swipe { display: none; } }
 .car-hero__swipe img { flex: 0 0 100%; aspect-ratio: 4/3; object-fit: cover; scroll-snap-align: start; }
 
@@ -1057,7 +1060,7 @@ main { min-height: 60vh; }
 .expired-note { color: #f0b3a6; font-size: 13px; margin-top: 8px; }
 
 /* --- логотип-картинка и режим «как приложение» --- */
-.logo__img { width: 30px; height: 30px; border-radius: 8px; object-fit: contain; flex-shrink: 0; }
+.logo__img { height: 30px; width: auto; max-width: 70px; object-fit: contain; flex-shrink: 0; }
 .link-btn { background: none; border: 0; padding: 0; font: inherit; color: var(--accent-strong); cursor: pointer; text-align: left; }
 .link-btn:hover { text-decoration: underline; }
 @media (display-mode: standalone) {

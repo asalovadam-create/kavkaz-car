@@ -458,6 +458,74 @@
     if (/^https:\/\//.test(target)) setTimeout(function () { window.location.href = target; }, 1500);
   }
 
+  /* ------------- Просмотры: объявление попало в экран при прокрутке ленты ---------- */
+  /* Карточка, которая больше половины видна ≥ 0,6 с, считается просмотренной. Айди копятся и уходят
+   * пачкой; сервер сам отсекает ботов, владельца и повторы (раз в 6 часов на человека). */
+
+  (function () {
+    if (!("IntersectionObserver" in window) || !window.fetch) return;
+    var VISIBLE_RATIO = 0.5, DWELL_MS = 600, FLUSH_MS = 2500, MAX_BATCH = 30;
+    var timers = new Map(), sent = new Set(), queue = [], flushTimer = null;
+
+    function flush() {
+      clearTimeout(flushTimer);
+      flushTimer = null;
+      if (!queue.length) return;
+      var ids = queue.splice(0, MAX_BATCH);
+      fetch("/api/impressions", {
+        method: "POST",
+        keepalive: true,
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": CSRF_TOKEN, "X-Requested-With": "XMLHttpRequest" },
+        body: JSON.stringify({ ids: ids })
+      }).catch(function () { /* статистика не должна мешать пользователю */ });
+      if (queue.length) flushTimer = setTimeout(flush, 300);
+    }
+
+    function enqueue(id) {
+      if (sent.has(id)) return;
+      sent.add(id);
+      queue.push(id);
+      if (queue.length >= MAX_BATCH) flush();
+      else if (!flushTimer) flushTimer = setTimeout(flush, FLUSH_MS);
+    }
+
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        var el = entry.target;
+        var id = el.getAttribute("data-car-id");
+        if (!id) return;
+        if (entry.isIntersecting && entry.intersectionRatio >= VISIBLE_RATIO) {
+          if (!timers.has(el) && !sent.has(id)) {
+            timers.set(el, setTimeout(function () {
+              timers.delete(el);
+              enqueue(id);
+              observer.unobserve(el);
+            }, DWELL_MS));
+          }
+        } else if (timers.has(el)) {
+          clearTimeout(timers.get(el));
+          timers.delete(el);
+        }
+      });
+    }, { threshold: [0, VISIBLE_RATIO, 1] });
+
+    function watch(root) {
+      if (root.nodeType !== 1) return;
+      if (root.matches && root.matches("[data-car-card][data-car-id]")) observer.observe(root);
+      if (root.querySelectorAll) root.querySelectorAll("[data-car-card][data-car-id]").forEach(function (el) { observer.observe(el); });
+    }
+
+    watch(document.body);
+    // «Показать ещё» и избранное гостя подгружают карточки уже после загрузки страницы
+    new MutationObserver(function (mutations) {
+      mutations.forEach(function (m) { m.addedNodes.forEach(watch); });
+    }).observe(document.body, { childList: true, subtree: true });
+
+    document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") flush(); });
+    window.addEventListener("pagehide", flush);
+  })();
+
   /* --------------------- Приложение: service worker и кнопка «Установить» ---------- */
 
   if ("serviceWorker" in navigator && window.location.protocol === "https:") {

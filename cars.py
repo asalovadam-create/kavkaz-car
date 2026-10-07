@@ -193,23 +193,75 @@ def _is_bot() -> bool:
     return not ua or any(marker in ua for marker in BOT_MARKERS)
 
 
+VIEW_DEDUP_HOURS = 6        # один и тот же человек засчитывается по объявлению раз в 6 часов
+IMPRESSIONS_MAX_BATCH = 30  # сколько объявлений можно засчитать одним запросом
+
+
+def _viewer_hash(car_id: int) -> str:
+    ip = request.remote_addr or ""
+    ua = request.headers.get("User-Agent", "")
+    return hashlib.sha256(f"{ip}{ua}{car_id}".encode()).hexdigest()
+
+
 def _record_view(car):
     """Считаем только реальные просмотры: без ботов и без владельца."""
     if request.method != "GET" or _is_bot():
         return
     if g.current_user and g.current_user.id == car.owner_id:
         return
-    ip = request.remote_addr or ""
-    ua = request.headers.get("User-Agent", "")
-    viewer_hash = hashlib.sha256(f"{ip}{ua}{car.id}".encode()).hexdigest()
+    viewer_hash = _viewer_hash(car.id)
 
-    recent_cutoff = datetime.utcnow() - timedelta(hours=6)
+    recent_cutoff = datetime.utcnow() - timedelta(hours=VIEW_DEDUP_HOURS)
     already_counted = View.query.filter(
         View.car_id == car.id, View.viewer_hash == viewer_hash, View.created_at > recent_cutoff,
     ).first()
     if not already_counted:
         db.session.add(View(car_id=car.id, viewer_hash=viewer_hash))
         db.session.commit()
+
+
+@cars_bp.route("/api/impressions", methods=["POST"])
+@rate_limit("impression")
+def record_impressions():
+    """Показы в ленте: браузер присылает public_id объявлений, которые человек реально увидел
+    (карточка на экране больше полсекунды). Считаем их как просмотр — с той же защитой от
+    накрутки, что и открытие страницы: без ботов, без владельца, один раз в 6 часов на человека."""
+    if _is_bot():
+        return ("", 204)
+    payload = request.get_json(silent=True)
+    raw_ids = payload.get("ids") if isinstance(payload, dict) else None
+    if not isinstance(raw_ids, list):
+        return ("", 204)
+    ids = []
+    for item in raw_ids:
+        if isinstance(item, str) and 4 <= len(item) <= 12 and item not in ids:
+            ids.append(item)
+        if len(ids) >= IMPRESSIONS_MAX_BATCH:
+            break
+    if not ids:
+        return ("", 204)
+
+    query = Car.query.filter(Car.public_id.in_(ids), Car.status == "published")
+    if g.current_user:
+        query = query.filter(Car.owner_id != g.current_user.id)
+    cars = query.all()
+    if not cars:
+        return ("", 204)
+
+    hashes = {car.id: _viewer_hash(car.id) for car in cars}
+    cutoff = datetime.utcnow() - timedelta(hours=VIEW_DEDUP_HOURS)
+    seen = {
+        (car_id, viewer_hash)
+        for car_id, viewer_hash in db.session.query(View.car_id, View.viewer_hash).filter(
+            View.car_id.in_(list(hashes)), View.viewer_hash.in_(list(hashes.values())), View.created_at > cutoff,
+        )
+    }
+    fresh = [car_id for car_id, h in hashes.items() if (car_id, h) not in seen]
+    for car_id in fresh:
+        db.session.add(View(car_id=car_id, viewer_hash=hashes[car_id]))
+    if fresh:
+        db.session.commit()
+    return ("", 204)
 
 
 def _car_jsonld(car, absolute_url: str) -> dict:
@@ -374,7 +426,7 @@ def favorites_sync():
 @cars_bp.route("/favorites/toggle/<public_id>", methods=["POST"])
 @login_required
 def toggle_favorite(public_id):
-    car = Car.query.filter_by(public_id=public_id).first_or_404()
+    car = Car.query.filter_by(public_id=public_id, status="published").first_or_404()
     existing = Favorite.query.filter_by(user_id=g.current_user.id, car_id=car.id).first()
     if existing:
         db.session.delete(existing)

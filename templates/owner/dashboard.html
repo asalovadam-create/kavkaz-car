@@ -3,7 +3,7 @@
 {% block robots %}noindex, nofollow{% endblock %}
 
 {% macro stat_tail(s, extended) %}
-  <span title="Просмотры: всего / за 7 дней">👁 {{ s.views }} <small>(+{{ s.views7 }} за 7 дн.)</small></span>
+  <span title="Просмотры (показ в ленте и открытие объявления): всего / за 7 дней">👁 {{ s.views }} <small>(+{{ s.views7 }} за 7 дн.)</small></span>
   <span title="Обращения: всего / за 7 дней">📞 {{ s.contacts }} <small>(+{{ s.contacts7 }} за 7 дн.)</small></span>
   {% if extended and s.channels %}
     <span>{% for ch, n in s.channels.items() %}{{ {'call': 'звонки', 'whatsapp': 'WhatsApp', 'telegram': 'Telegram'}.get(ch, ch) }}: {{ n }}{% if not loop.last %} · {% endif %}{% endfor %}</span>
