@@ -13,7 +13,8 @@ from sqlalchemy import func
 
 from config import CAR_STATUSES, PLAN_ORDER, PLANS
 from models import (
-    AdminLog, Car, OwnerProfile, PaymentOrder, PromoCode, Report, Subscription, User, db,
+    AdminLog, Car, OwnerProfile, PaymentOrder, PromoCode, Report, SiteVisitor, Subscription, SupportMessage,
+    SupportThread, User, db,
 )
 from payments import mark_order_paid
 from security import admin_required, hash_password
@@ -364,3 +365,119 @@ def settings():
         flash("Настройки сохранены.", "success")
         return redirect(url_for("admin_panel.settings"))
     return render_template("admin/settings.html", values=get_settings())
+
+
+# ---------------------------------------------------------------------------
+# Чат поддержки
+# ---------------------------------------------------------------------------
+
+@admin_bp.context_processor
+def inject_support_badge():
+    """Число обращений с непрочитанными сообщениями — для значка в меню админки."""
+    try:
+        return {"support_unread": SupportThread.query.filter_by(admin_unread=True).count()}
+    except Exception:
+        db.session.rollback()
+        return {"support_unread": 0}
+
+
+@admin_bp.route("/support")
+@admin_required
+def support_inbox():
+    status = request.args.get("status", "open")
+    query = SupportThread.query
+    if status in ("open", "closed"):
+        query = query.filter_by(status=status)
+    threads = query.order_by(SupportThread.admin_unread.desc(), SupportThread.updated_at.desc()).limit(200).all()
+    return render_template("admin/support.html", threads=threads, status=status)
+
+
+@admin_bp.route("/support/<int:thread_id>")
+@admin_required
+def support_thread(thread_id):
+    thread = SupportThread.query.get_or_404(thread_id)
+    messages = (
+        SupportMessage.query.filter_by(thread_id=thread.id)
+        .order_by(SupportMessage.id.desc()).limit(500).all()
+    )[::-1]
+    if thread.admin_unread:
+        thread.admin_unread = False
+        db.session.commit()
+    return render_template("admin/support_thread.html", thread=thread, messages=messages)
+
+
+@admin_bp.route("/support/<int:thread_id>/reply", methods=["POST"])
+@admin_required
+def support_reply(thread_id):
+    thread = SupportThread.query.get_or_404(thread_id)
+    body = clean_text(request.form.get("message"), 2000)
+    if not body:
+        flash("Напишите ответ.", "error")
+        return redirect(url_for("admin_panel.support_thread", thread_id=thread.id))
+    now = datetime.utcnow()
+    db.session.add(SupportMessage(thread_id=thread.id, sender="admin", body=body, created_at=now))
+    thread.status = "open"
+    thread.admin_unread = False
+    thread.user_unread = True
+    thread.updated_at = now
+    thread.last_message = body[:200]
+    notify_user(thread.user_id, "Ответ поддержки", body[:300], kind="admin", link="/chat")
+    _log_action("support_reply", "user", thread.user_id)
+    db.session.commit()
+    flash("Ответ отправлен.", "success")
+    return redirect(url_for("admin_panel.support_thread", thread_id=thread.id))
+
+
+@admin_bp.route("/support/<int:thread_id>/status", methods=["POST"])
+@admin_required
+def support_status(thread_id):
+    thread = SupportThread.query.get_or_404(thread_id)
+    thread.status = "closed" if thread.status == "open" else "open"
+    _log_action(f"support_{thread.status}", "user", thread.user_id)
+    db.session.commit()
+    return redirect(url_for("admin_panel.support_thread", thread_id=thread.id))
+
+
+# ---------------------------------------------------------------------------
+# Посетители сайта
+# ---------------------------------------------------------------------------
+
+VISITOR_PERIODS = {"24h": timedelta(hours=24), "7d": timedelta(days=7), "30d": timedelta(days=30)}
+
+
+@admin_bp.route("/visitors")
+@admin_required
+def visitors():
+    period = request.args.get("period", "24h")
+    if period not in VISITOR_PERIODS:
+        period = "24h"
+    only_users = request.args.get("only") == "users"
+    now = datetime.utcnow()
+    since = now - VISITOR_PERIODS[period]
+
+    def filtered(query):
+        query = query.filter(SiteVisitor.last_seen >= since)
+        return query.filter(SiteVisitor.user_id.isnot(None)) if only_users else query
+
+    def breakdown(*columns, limit=8):
+        return (
+            filtered(db.session.query(*columns, func.count(SiteVisitor.id)))
+            .group_by(*columns).order_by(func.count(SiteVisitor.id).desc()).limit(limit).all()
+        )
+
+    rows = filtered(SiteVisitor.query).order_by(SiteVisitor.last_seen.desc()).limit(300).all()
+    stats = dict(
+        total=filtered(SiteVisitor.query).count(),
+        new=filtered(SiteVisitor.query).filter(SiteVisitor.first_seen >= since).count(),
+        online=SiteVisitor.query.filter(SiteVisitor.last_seen >= now - timedelta(minutes=6)).count(),
+        with_account=filtered(SiteVisitor.query).filter(SiteVisitor.user_id.isnot(None)).count(),
+    )
+    user_ids = {r.user_id for r in rows if r.user_id}
+    users_by_id = {u.id: u for u in User.query.filter(User.id.in_(user_ids)).all()} if user_ids else {}
+    return render_template(
+        "admin/visitors.html", rows=rows, stats=stats, period=period, only_users=only_users,
+        users_by_id=users_by_id,
+        by_type=breakdown(SiteVisitor.device_type), by_os=breakdown(SiteVisitor.os_name),
+        by_model=breakdown(SiteVisitor.brand, SiteVisitor.model, limit=10),
+        by_browser=breakdown(SiteVisitor.browser, limit=6),
+    )

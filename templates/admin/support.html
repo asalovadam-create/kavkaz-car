@@ -1,0 +1,29 @@
+{% extends "admin/_base.html" %}
+{% block admin_content %}
+  <div class="row" style="margin-bottom:16px;">
+    <a href="{{ url_for('admin_panel.support_inbox', status='open') }}" class="btn btn-sm {{ 'btn-primary' if status == 'open' else 'btn-ghost' }}">Открытые</a>
+    <a href="{{ url_for('admin_panel.support_inbox', status='closed') }}" class="btn btn-sm {{ 'btn-primary' if status == 'closed' else 'btn-ghost' }}">Закрытые</a>
+    <a href="{{ url_for('admin_panel.support_inbox', status='all') }}" class="btn btn-sm {{ 'btn-primary' if status == 'all' else 'btn-ghost' }}">Все</a>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Пользователь</th><th>Последнее сообщение</th><th>Когда</th><th></th></tr></thead>
+      <tbody>
+        {% for t in threads %}
+          <tr>
+            <td>
+              <strong>{{ t.user.full_name or 'Без имени' }}</strong><br>
+              <small class="text-muted">{{ t.user.phone }}</small>
+            </td>
+            <td class="wrap">
+              {% if t.admin_unread %}<span style="background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:1px 8px;font-size:11px;font-weight:700;margin-right:6px;">новое</span>{% endif %}
+              {{ t.last_message or '—' }}
+            </td>
+            <td>{{ t.updated_at.strftime('%d.%m %H:%M') }}</td>
+            <td><a class="btn btn-ghost btn-sm" href="{{ url_for('admin_panel.support_thread', thread_id=t.id) }}">Открыть</a></td>
+          </tr>
+        {% else %}<tr><td colspan="4" class="text-muted">Обращений пока нет.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

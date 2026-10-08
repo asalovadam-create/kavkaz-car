@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Чат с поддержкой — KAVKAZ-CAR{% endblock %}
+{% block robots %}noindex, nofollow{% endblock %}
+
+{% block content %}
+<div class="page-narrow">
+  <h1 class="page-title">Чат с поддержкой</h1>
+  <p class="page-lead" style="margin-bottom:16px;">Напишите вопрос. Ответ появится здесь и в уведомлениях (колокольчик).</p>
+
+  <div class="chat" data-chat data-chat-last="{{ last_id }}" data-chat-poll="{{ url_for('chat.chat_poll') }}">
+    <div class="chat__list" data-chat-list>
+      {% for m in messages %}
+        <div class="chat-msg {{ 'chat-msg--me' if m.sender == 'user' else 'chat-msg--them' }}">
+          <p>{{ m.body }}</p>
+          <span>{{ 'Поддержка · ' if m.sender == 'admin' }}{{ m.created_at.strftime('%d.%m %H:%M') }}</span>
+        </div>
+      {% endfor %}
+      {% if not messages %}<p class="chat__empty" data-chat-empty>Сообщений пока нет. Опишите, что случилось, и мы ответим как можно скорее.</p>{% endif %}
+    </div>
+    <form class="chat__form" method="post" action="{{ url_for('chat.chat_send') }}" data-chat-form>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <textarea name="message" rows="2" maxlength="2000" placeholder="Ваше сообщение" required></textarea>
+      <button type="submit" class="btn btn-primary">Отправить</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

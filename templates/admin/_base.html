@@ -35,6 +35,8 @@
         <a href="{{ url_for('admin_panel.users') }}" class="{{ 'is-active' if ep == 'admin_panel.users' }}">Пользователи</a>
         <a href="{{ url_for('admin_panel.cars') }}" class="{{ 'is-active' if ep == 'admin_panel.cars' }}">Автомобили</a>
         <a href="{{ url_for('admin_panel.reports') }}" class="{{ 'is-active' if ep == 'admin_panel.reports' }}">Жалобы</a>
+        <a href="{{ url_for('admin_panel.support_inbox') }}" class="{{ 'is-active' if ep in ('admin_panel.support_inbox', 'admin_panel.support_thread') }}">Поддержка{% if support_unread %} <span style="background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:4px;">{{ support_unread }}</span>{% endif %}</a>
+        <a href="{{ url_for('admin_panel.visitors') }}" class="{{ 'is-active' if ep == 'admin_panel.visitors' }}">Посетители</a>
         <a href="{{ url_for('admin_panel.promo_codes') }}" class="{{ 'is-active' if ep == 'admin_panel.promo_codes' }}">Промокоды</a>
         <a href="{{ url_for('admin_panel.settings') }}" class="{{ 'is-active' if ep == 'admin_panel.settings' }}">Настройки сайта</a>
         <a href="{{ url_for('admin_panel.logs') }}" class="{{ 'is-active' if ep == 'admin_panel.logs' }}">Журнал действий</a>

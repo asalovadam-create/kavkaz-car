@@ -1,0 +1,64 @@
+{% extends "admin/_base.html" %}
+{% block admin_content %}
+  {% set type_names = {'mobile': 'Телефон', 'tablet': 'Планшет', 'desktop': 'Компьютер'} %}
+  <div class="row" style="margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+    {% for key, name in (('24h', '24 часа'), ('7d', '7 дней'), ('30d', '30 дней')) %}
+      <a href="{{ url_for('admin_panel.visitors', period=key, only='users' if only_users else None) }}" class="btn btn-sm {{ 'btn-primary' if period == key else 'btn-ghost' }}">{{ name }}</a>
+    {% endfor %}
+    <a href="{{ url_for('admin_panel.visitors', period=period, only=None if only_users else 'users') }}" class="btn btn-sm {{ 'btn-primary' if only_users else 'btn-ghost' }}">Только с аккаунтом</a>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <div class="row" style="flex-wrap:wrap;gap:24px;">
+      <div><strong style="font-size:24px;">{{ stats.total }}</strong><br><small class="text-muted">посетителей (устройств)</small></div>
+      <div><strong style="font-size:24px;">{{ stats.new }}</strong><br><small class="text-muted">из них новых</small></div>
+      <div><strong style="font-size:24px;">{{ stats.with_account }}</strong><br><small class="text-muted">вошли в аккаунт</small></div>
+      <div><strong style="font-size:24px;">{{ stats.online }}</strong><br><small class="text-muted">на сайте сейчас (за 6 мин)</small></div>
+    </div>
+  </div>
+
+  <div class="row" style="flex-wrap:wrap;gap:16px;align-items:flex-start;margin-bottom:16px;">
+    <div class="card" style="flex:1;min-width:200px;">
+      <h3 style="margin-bottom:8px;">Устройства</h3>
+      {% for name, n in by_type %}<div class="row" style="justify-content:space-between;"><span>{{ type_names.get(name, name or '—') }}</span><strong>{{ n }}</strong></div>{% else %}<small class="text-muted">Пока нет данных</small>{% endfor %}
+    </div>
+    <div class="card" style="flex:1;min-width:200px;">
+      <h3 style="margin-bottom:8px;">Системы</h3>
+      {% for name, n in by_os %}<div class="row" style="justify-content:space-between;"><span>{{ name or '—' }}</span><strong>{{ n }}</strong></div>{% else %}<small class="text-muted">Пока нет данных</small>{% endfor %}
+    </div>
+    <div class="card" style="flex:1;min-width:200px;">
+      <h3 style="margin-bottom:8px;">Модели</h3>
+      {% for brand, model, n in by_model %}<div class="row" style="justify-content:space-between;gap:8px;"><span>{{ ((brand ~ ' ' ~ model) if brand and brand != 'Apple' else (model or brand)) or '—' }}</span><strong>{{ n }}</strong></div>{% else %}<small class="text-muted">Пока нет данных</small>{% endfor %}
+    </div>
+    <div class="card" style="flex:1;min-width:200px;">
+      <h3 style="margin-bottom:8px;">Браузеры</h3>
+      {% for name, n in by_browser %}<div class="row" style="justify-content:space-between;"><span>{{ name or '—' }}</span><strong>{{ n }}</strong></div>{% else %}<small class="text-muted">Пока нет данных</small>{% endfor %}
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Был</th><th>IP</th><th>Устройство</th><th>Система</th><th>Браузер</th><th>Экран</th><th>Аккаунт</th><th>Визитов</th><th>Откуда / страница</th></tr></thead>
+      <tbody>
+        {% for v in rows %}
+          {% set u = users_by_id.get(v.user_id) %}
+          <tr>
+            <td>{{ v.last_seen.strftime('%d.%m %H:%M') }}<br><small class="text-muted">с {{ v.first_seen.strftime('%d.%m') }}</small></td>
+            <td>{{ v.ip or '—' }}</td>
+            <td class="wrap">{{ v.label() }}</td>
+            <td>{{ v.os_name or '—' }} {{ v.os_version or '' }}</td>
+            <td class="wrap">{{ v.browser or '—' }}</td>
+            <td>{{ v.screen or '—' }}</td>
+            <td>{% if u %}<a class="link-accent" href="{{ url_for('admin_panel.users', q=u.phone) }}">{{ u.phone }}</a>{% else %}<span class="text-muted">гость</span>{% endif %}</td>
+            <td>{{ v.visits }}</td>
+            <td class="wrap"><small>{% if v.referrer %}из {{ v.referrer }}<br>{% endif %}{{ v.last_path or '—' }}</small></td>
+          </tr>
+        {% else %}<tr><td colspan="9" class="text-muted">За выбранный период посетителей нет.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="text-muted" style="font-size:12px;margin-top:10px;">
+    Боты и поисковые роботы не считаются. Записи хранятся 90 дней. Точную модель iPhone определить нельзя: Apple её не передаёт,
+    поэтому показана группа моделей по размеру экрана. У Android модель видна, если телефон её сообщает.
+  </p>
+{% endblock %}

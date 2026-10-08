@@ -447,3 +447,65 @@ class SiteSetting(db.Model):
 
     key = db.Column(db.String(60), primary_key=True)
     value = db.Column(db.Text, nullable=False, default="")
+
+
+class SupportThread(db.Model):
+    """Чат пользователя с поддержкой: у каждого пользователя одна переписка."""
+
+    __tablename__ = "support_threads"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    status = db.Column(db.String(10), nullable=False, default="open")  # open | closed
+    admin_unread = db.Column(db.Boolean, nullable=False, default=False, index=True)  # есть непрочитанное от пользователя
+    user_unread = db.Column(db.Boolean, nullable=False, default=False)               # есть непрочитанный ответ
+    last_message = db.Column(db.String(200), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    user = db.relationship("User")
+
+
+class SupportMessage(db.Model):
+    __tablename__ = "support_messages"
+
+    id = db.Column(db.Integer, primary_key=True)
+    thread_id = db.Column(db.Integer, db.ForeignKey("support_threads.id", ondelete="CASCADE"), nullable=False, index=True)
+    sender = db.Column(db.String(10), nullable=False)  # user | admin
+    body = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
+class SiteVisitor(db.Model):
+    """Посетитель сайта (одно устройство = один случайный идентификатор в cookie).
+    Для статистики и безопасности; записи старше 90 дней удаляются автоматически."""
+
+    __tablename__ = "site_visitors"
+
+    id = db.Column(db.Integer, primary_key=True)
+    visitor_id = db.Column(db.String(32), nullable=False, unique=True)
+    ip = db.Column(db.String(45), nullable=True, index=True)
+    user_agent = db.Column(db.String(400), nullable=True)
+    device_type = db.Column(db.String(10), nullable=True)   # mobile | tablet | desktop
+    brand = db.Column(db.String(30), nullable=True)
+    model = db.Column(db.String(80), nullable=True)
+    os_name = db.Column(db.String(30), nullable=True)
+    os_version = db.Column(db.String(20), nullable=True)
+    browser = db.Column(db.String(40), nullable=True)
+    screen = db.Column(db.String(24), nullable=True)
+    user_id = db.Column(db.Integer, nullable=True, index=True)  # без внешнего ключа: статистика не мешает удалению аккаунта
+    referrer = db.Column(db.String(200), nullable=True)
+    first_path = db.Column(db.String(200), nullable=True)
+    last_path = db.Column(db.String(200), nullable=True)
+    visits = db.Column(db.Integer, nullable=False, default=1)
+    first_seen = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    def label(self) -> str:
+        """Как назвать устройство в админке."""
+        if self.brand == "Apple" and self.model:
+            return self.model
+        name = f"{self.brand or ''} {self.model or ''}".strip()
+        if name:
+            return name
+        return {"mobile": "Телефон", "tablet": "Планшет", "desktop": "Компьютер"}.get(self.device_type or "", "Устройство")

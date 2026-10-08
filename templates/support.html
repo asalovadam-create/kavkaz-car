@@ -10,7 +10,9 @@
 
   <div class="card">
     <h2>Связаться с поддержкой</h2>
+    <p class="muted-sm" style="margin-bottom:12px;">Самый удобный способ: напишите прямо здесь, ответ придёт на сайт.</p>
     <div class="contact-list">
+      <a class="btn btn-primary" href="{{ url_for('chat.chat') }}">Написать в чат поддержки</a>
       {% if support_telegram %}<a class="btn btn-primary" href="https://t.me/{{ support_telegram.lstrip('@').split('/')[-1] }}" target="_blank" rel="noopener">Telegram</a>{% endif %}
       {% if support_whatsapp %}<a class="btn btn-ghost" href="https://wa.me/{{ support_whatsapp | replace('+', '') | replace(' ', '') }}" target="_blank" rel="noopener">WhatsApp</a>{% endif %}
       {% if support_phone %}<a class="btn btn-ghost" href="tel:{{ support_phone | replace(' ', '') }}">{{ support_phone }}</a>{% endif %}

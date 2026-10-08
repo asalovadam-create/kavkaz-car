@@ -1,0 +1,30 @@
+{% extends "admin/_base.html" %}
+{% block admin_content %}
+  <div class="row" style="margin-bottom:12px;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <div>
+      <a href="{{ url_for('admin_panel.support_inbox') }}" class="text-muted">&larr; Все обращения</a>
+      <h2 style="margin-top:6px;">{{ thread.user.full_name or 'Без имени' }} <small class="text-muted">{{ thread.user.phone }}</small></h2>
+    </div>
+    <form method="post" action="{{ url_for('admin_panel.support_status', thread_id=thread.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-ghost btn-sm">{{ 'Закрыть обращение' if thread.status == 'open' else 'Открыть снова' }}</button>
+    </form>
+  </div>
+
+  <div class="chat">
+    <div class="chat__list chat__list--admin">
+      {% for m in messages %}
+        <div class="chat-msg {{ 'chat-msg--me' if m.sender == 'admin' else 'chat-msg--them' }}">
+          <p>{{ m.body }}</p>
+          <span>{{ 'Вы' if m.sender == 'admin' else (thread.user.full_name or 'Пользователь') }} · {{ m.created_at.strftime('%d.%m %H:%M') }}</span>
+        </div>
+      {% endfor %}
+    </div>
+    <form class="chat__form" method="post" action="{{ url_for('admin_panel.support_reply', thread_id=thread.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <textarea name="message" rows="3" maxlength="2000" placeholder="Ваш ответ" required></textarea>
+      <button type="submit" class="btn btn-primary">Ответить</button>
+    </form>
+  </div>
+  <p class="text-muted" style="font-size:12px;margin-top:8px;">Ответ придёт пользователю в чат и в колокольчик уведомлений.</p>
+{% endblock %}

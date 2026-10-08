@@ -334,6 +334,8 @@ RATE_LIMITS = {
     "password_change": (5, 600),
     "checkout": (10, 600),
     "guest_cards": (60, 60),
+    "chat_send": (12, 300),        # сообщений в чат поддержки
+    "visit_info": (20, 60),
     "impression": (40, 60),       # пачки показов объявлений в ленте
 }
 

@@ -125,8 +125,10 @@ def create_app(config_object: type = Config) -> Flask:
     Migrate(app, db)
 
     from admin import admin_bp
+    from analytics import analytics_bp
     from auth import auth_bp
     from cars import cars_bp
+    from chat import chat_bp
     from owners import owner_bp
     from payments import payments_bp
     from routes import main_bp
@@ -136,6 +138,8 @@ def create_app(config_object: type = Config) -> Flask:
     app.register_blueprint(cars_bp)
     app.register_blueprint(owner_bp)
     app.register_blueprint(payments_bp)
+    app.register_blueprint(chat_bp)
+    app.register_blueprint(analytics_bp)
     prefix = app.config["ADMIN_PREFIX"]
     app.register_blueprint(admin_bp, url_prefix=prefix)
     # Вход/выход админа живут на секретном адресе. Имена endpoint сохранены (auth.admin_login),
@@ -244,6 +248,11 @@ def _register_hooks(app: Flask) -> None:
     @app.after_request
     def set_security_headers(response):
         return apply_security_headers(response)
+
+    @app.after_request
+    def record_visit(response):
+        from analytics import track_visit
+        return track_visit(response)
 
 
 def _register_error_handlers(app: Flask) -> None:

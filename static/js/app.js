@@ -505,6 +505,93 @@
     if (/^https:\/\//.test(target)) setTimeout(function () { window.location.href = target; }, 1500);
   }
 
+  /* ------------------------- Чат поддержки: отправка и новые ответы ---------------------- */
+  (function () {
+    var box = document.querySelector("[data-chat]");
+    if (!box) return;
+    var list = box.querySelector("[data-chat-list]");
+    var form = box.querySelector("[data-chat-form]");
+    var input = form.querySelector("textarea");
+    var button = form.querySelector("button[type=submit]");
+    var pollUrl = box.getAttribute("data-chat-poll");
+    var lastId = parseInt(box.getAttribute("data-chat-last") || "0", 10) || 0;
+    var busy = false;
+
+    function add(m) {
+      if (m.id && m.id <= lastId) return;
+      lastId = Math.max(lastId, m.id || 0);
+      var empty = box.querySelector("[data-chat-empty]");
+      if (empty) empty.remove();
+      var div = document.createElement("div");
+      div.className = "chat-msg " + (m.sender === "user" ? "chat-msg--me" : "chat-msg--them");
+      var p = document.createElement("p");
+      p.textContent = m.body;
+      var t = document.createElement("span");
+      t.textContent = (m.sender === "admin" ? "Поддержка \u00b7 " : "") + m.time;
+      div.appendChild(p);
+      div.appendChild(t);
+      list.appendChild(div);
+      list.scrollTop = list.scrollHeight;
+    }
+
+    list.scrollTop = list.scrollHeight;
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      if (busy || !input.value.trim()) return;
+      busy = true;
+      button.disabled = true;
+      fetch(form.action, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "X-CSRF-Token": CSRF_TOKEN, "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" },
+        body: new FormData(form)
+      }).then(function (response) {
+        return response.json().then(function (data) { return { ok: response.ok, data: data }; });
+      }).then(function (result) {
+        if (result.ok && result.data.message) {
+          add(result.data.message);
+          input.value = "";
+        } else {
+          alert(result.data.error || "Не удалось отправить сообщение.");
+        }
+      }).catch(function () {
+        alert("Нет соединения. Попробуйте ещё раз.");
+      }).then(function () {
+        busy = false;
+        button.disabled = false;
+      });
+    });
+
+    setInterval(function () {
+      if (document.hidden) return;
+      fetch(pollUrl + "?after=" + lastId, {
+        credentials: "same-origin",
+        headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" }
+      }).then(function (response) { return response.ok ? response.json() : null; })
+        .then(function (data) { if (data && data.messages) data.messages.forEach(add); })
+        .catch(function () {});
+    }, 8000);
+  })();
+
+  /* --------- Один раз отправляем размер экрана — по нему определяется группа моделей iPhone --------- */
+  (function () {
+    try { if (localStorage.getItem("kc_si")) return; } catch (e) { /* без localStorage попробуем ещё раз при следующем заходе */ }
+    var width = Math.min(screen.width, screen.height);
+    var height = Math.max(screen.width, screen.height);
+    var dpr = window.devicePixelRatio || 1;
+    setTimeout(function () {
+      fetch("/api/visit-info", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": CSRF_TOKEN, "X-Requested-With": "XMLHttpRequest" },
+        body: JSON.stringify({ w: width, h: height, dpr: dpr })
+      }).then(function (response) {
+        if (response.ok) { try { localStorage.setItem("kc_si", "1"); } catch (e) { /* ignore */ } }
+      }).catch(function () {});
+    }, 1500);
+  })();
+
   /* ------------- Просмотры: объявление попало в экран при прокрутке ленты ---------- */
   /* Карточка, которая больше половины видна ≥ 0,6 с, считается просмотренной. Айди копятся и уходят
    * пачкой; сервер сам отсекает ботов, владельца и повторы (раз в 6 часов на человека). */
