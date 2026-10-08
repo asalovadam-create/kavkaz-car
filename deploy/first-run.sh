@@ -20,7 +20,7 @@ echo
 if [ -n "$NEON_URL" ]; then
   NEON_URL="${NEON_URL//-pooler/}"      # для выгрузки нужен прямой адрес, без -pooler
   NEON_URL="${NEON_URL#\"}"; NEON_URL="${NEON_URL%\"}"
-  docker run --rm postgres:17-alpine pg_dump --no-owner --no-acl --format=custom "$NEON_URL" > /opt/neon.dump
+  docker run --rm postgres:18-alpine pg_dump --no-owner --no-acl --format=custom "$NEON_URL" > /opt/neon.dump
   ls -lh /opt/neon.dump
   set +e
   docker compose exec -T db pg_restore -U kavkazcar -d kavkazcar --no-owner --no-acl < /opt/neon.dump
