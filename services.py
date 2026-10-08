@@ -27,7 +27,7 @@ from validators import like_escape
 # ---------------------------------------------------------------------------
 
 MAIN_MAX_DIMENSION = 1600
-THUMB_MAX_DIMENSION = 400
+THUMB_MAX_DIMENSION = 800  # карточка на телефоне ~350 px × плотность 2-3: 400 px давали «мыло»
 
 
 def optimize_image(image):
@@ -52,8 +52,8 @@ def optimize_image(image):
     main = _resize_within(image, MAIN_MAX_DIMENSION)
     thumb = _resize_within(image, THUMB_MAX_DIMENSION)
 
-    main_bytes = _to_webp_bytes(main, quality=82)
-    thumb_bytes = _to_webp_bytes(thumb, quality=75)
+    main_bytes = _to_webp_bytes(main, quality=85)
+    thumb_bytes = _to_webp_bytes(thumb, quality=80)
     return main_bytes, thumb_bytes
 
 
