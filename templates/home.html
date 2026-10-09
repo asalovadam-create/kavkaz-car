@@ -79,6 +79,15 @@
     {% endfor %}
   </div>
 
+  <section class="social-banner" aria-label="Instagram KAVKAZ-CAR">
+    <span class="social-banner__icon"><svg class="icon"><use href="#icon-instagram"></use></svg></span>
+    <div class="social-banner__text">
+      <h2>Новые автомобили и акции &mdash; в Instagram</h2>
+      <p>Подписывайтесь на {{ config.INSTAGRAM_HANDLE }}: показываем свежие объявления и условия владельцев.</p>
+    </div>
+    <a class="btn btn-ghost" href="{{ config.INSTAGRAM_URL }}" target="_blank" rel="noopener me">Подписаться</a>
+  </section>
+
   <section class="cta-band" aria-labelledby="owners-cta">
     <div>
       <h2 id="owners-cta">Сдаёте автомобили?</h2>

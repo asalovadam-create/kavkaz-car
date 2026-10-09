@@ -1101,3 +1101,20 @@ main { min-height: 60vh; }
 .chat__form { display: flex; gap: 10px; align-items: flex-end; }
 .chat__form textarea { flex: 1; min-height: 48px; resize: vertical; padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--bg-surface); color: var(--text-primary); font: inherit; }
 @media (max-width: 480px) { .chat__form { flex-direction: column; align-items: stretch; } }
+
+/* ------------------------- Instagram ------------------------- */
+.social-link { display: inline-flex; align-items: center; gap: 12px; margin-top: 22px; padding: 8px 20px 8px 8px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--bg-surface); color: var(--text-primary); transition: border-color var(--dur-micro) var(--ease), transform var(--dur-micro) var(--ease); }
+.social-link:hover { border-color: var(--accent); transform: translateY(-1px); }
+.social-link__icon, .social-banner__icon { display: grid; place-items: center; flex-shrink: 0; color: #fff; background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+.social-link__icon { width: 40px; height: 40px; border-radius: 50%; }
+.social-link__icon .icon { width: 22px; height: 22px; }
+.social-link__text { display: flex; flex-direction: column; line-height: 1.25; }
+.social-link__text strong { font-size: 14px; }
+.social-link__text small { font-size: 12px; color: var(--text-secondary); }
+.social-banner { display: flex; align-items: center; gap: 18px; margin: 36px 0 20px; padding: 20px 24px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: linear-gradient(135deg, rgba(220, 39, 67, 0.10), rgba(240, 148, 51, 0.07)), var(--bg-surface); }
+.social-banner__icon { width: 56px; height: 56px; border-radius: 16px; }
+.social-banner__icon .icon { width: 30px; height: 30px; }
+.social-banner__text { flex: 1; min-width: 0; }
+.social-banner__text h2 { font-size: 18px; margin: 0 0 4px; }
+.social-banner__text p { margin: 0; font-size: 14px; color: var(--text-secondary); }
+@media (max-width: 640px) { .social-banner { flex-direction: column; align-items: flex-start; } .social-banner .btn { width: 100%; } }

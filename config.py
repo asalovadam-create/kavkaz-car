@@ -79,6 +79,8 @@ class Config:
 
     # --- Прочее ---
     SITE_URL = os.environ.get("SITE_URL", "https://kavkaz-car.ru").rstrip("/")
+    INSTAGRAM_URL = os.environ.get("INSTAGRAM_URL", "https://www.instagram.com/kavkaz_car95/")
+    INSTAGRAM_HANDLE = "@kavkaz_car95"
     SUPPORT_PHONE = os.environ.get("SUPPORT_PHONE", "")
     SUPPORT_TELEGRAM = os.environ.get("SUPPORT_TELEGRAM", "")  # @username или ссылка
     SUPPORT_WHATSAPP = os.environ.get("SUPPORT_WHATSAPP", "")  # номер, например +79001234567

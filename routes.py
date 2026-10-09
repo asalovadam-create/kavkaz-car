@@ -153,6 +153,7 @@ def about():
         "@context": "https://schema.org", "@type": "Organization", "name": "KAVKAZ-CAR",
         "url": site_url, "description": "Платформа аренды автомобилей на Северном Кавказе.",
     }
+    organization["sameAs"] = [current_app.config["INSTAGRAM_URL"]]
     if name:
         person = {"@type": "Person", "name": name, "url": f"{site_url}/about"}
         if saved.get("founder_role"):
