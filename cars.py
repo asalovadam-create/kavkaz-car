@@ -17,8 +17,9 @@ from sqlalchemy.orm import joinedload, selectinload
 from config import BODY_TYPES, EVENT_TYPES, LAUNCH_CITIES, REPORT_REASONS
 from models import Car, City, ContactClick, Favorite, OwnerProfile, Report, User, View, db
 from security import login_required, rate_limit
+from search import parse_search
 from services import (
-    SORT_MODES, build_car_slug, expand_search_terms, freshness_label, notify_admin_telegram,
+    SORT_MODES, build_car_slug, freshness_label, notify_admin_telegram,
     plan_limits, preload_plans, rank_cars,
 )
 from validators import (
@@ -57,24 +58,37 @@ def _base_query():
 
 def _apply_filters(query, args):
     city_slug = args.get("city")
-    q_groups = expand_search_terms(args.get("q", ""))
-    if city_slug or q_groups:
+    conditions_list = parse_search(args.get("q", ""))
+    if city_slug or conditions_list:
         query = query.join(City, Car.city_id == City.id)
     if city_slug:
         query = query.filter(City.slug == city_slug)
 
-    # Каждое слово запроса должно найтись (AND), но у слова может быть несколько
-    # вариантов написания (OR): «гелик» -> g-class / g63 / g500 ...
-    for variants in q_groups:
-        conditions = []
-        for variant in variants:
+    # Каждое слово запроса должно найтись (И), но у слова несколько вариантов написания (ИЛИ):
+    # «камри» -> camry / камри / кэмри, «гелик» -> g-class / g63 ... Ищем в марке, модели, городе и
+    # описании. Слова-свойства («свадьба», «с водителем») учитывают ещё и галочки объявления.
+    for cond in conditions_list:
+        parts = []
+        for variant in cond["variants"]:
             like = f"%{like_escape(variant)}%"
-            conditions += [
+            parts += [
                 Car.brand.ilike(like, escape="\\"),
                 Car.model.ilike(like, escape="\\"),
                 City.name.ilike(like, escape="\\"),
+                Car.body_type.ilike(like, escape="\\"),
+                Car.description.ilike(like, escape="\\"),
+                Car.extra_terms.ilike(like, escape="\\"),
             ]
-        query = query.filter(db.or_(*conditions))
+        if cond.get("year"):
+            parts.append(Car.year == cond["year"])
+        flag = cond.get("flag")
+        if flag:
+            column = getattr(Car, flag)
+            if cond.get("negated"):
+                parts = [column.is_(False)]  # «без водителя»: только то, где водителя нет
+            else:
+                parts.append(column.is_(True))
+        query = query.filter(db.or_(*parts))
 
     price_max = args.get("price_max", type=int)
     if price_max and price_max > 0:

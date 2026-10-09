@@ -221,25 +221,9 @@ def boosts_remaining(user) -> int:
 # ---------------------------------------------------------------------------
 
 def expand_search_terms(raw: str) -> list[list[str]]:
-    """Разбирает строку поиска на группы. Группы связаны через AND, варианты
-    внутри группы — через OR. «гелик грозный» -> [[g-class, g63, ...], [грозный]]."""
-    text = re.sub(r"\s+", " ", (raw or "").strip().lower())[:80]
-    if not text:
-        return []
-    groups: list[list[str]] = []
-
-    # Сначала многословные синонимы («рендж ровер»), потом отдельные слова.
-    for phrase in sorted((k for k in SEARCH_SYNONYMS if " " in k), key=len, reverse=True):
-        if phrase in text:
-            groups.append(_as_list(SEARCH_SYNONYMS[phrase]))
-            text = text.replace(phrase, " ")
-
-    for token in text.split():
-        if token in SEARCH_SYNONYMS:
-            groups.append(_as_list(SEARCH_SYNONYMS[token]))
-        else:
-            groups.append([token])
-    return groups[:6]
+    """Совместимость: группы вариантов слов запроса (подробности — в search.parse_search)."""
+    from search import parse_search
+    return [c["variants"] for c in parse_search(raw)]
 
 
 def _as_list(value) -> list[str]:
